@@ -1,4 +1,4 @@
-// app.js - COMPLETE FIX FOR MESSAGE CLEARING
+// app.js - FIXED: Messages stay in database, only UI clears
 let currentChannel = null;
 let userId = null;
 let userName = null;
@@ -6,6 +6,7 @@ let userRef = null;
 let messagesListener = null;
 let onlineListener = null;
 let lastOnlineCount = 1;
+let shouldDisplayMessages = true; // NEW: Control message display
 
 // Generate random user ID and name
 function generateUserId() {
@@ -20,7 +21,7 @@ function generateRandomName() {
     return adj + noun + Math.floor(Math.random() * 100);
 }
 
-// Join a channel (updated to accept URL parameter)
+// Join a channel
 function joinChannel(channelFromUrl = null) {
     let channel;
     
@@ -42,13 +43,14 @@ function joinChannel(channelFromUrl = null) {
     userId = generateUserId();
     userName = generateRandomName();
     lastOnlineCount = 1;
+    shouldDisplayMessages = true; // Allow message display
 
     // Switch to chat screen
     document.getElementById('channelScreen').style.display = 'none';
     document.getElementById('chatScreen').style.display = 'flex';
     document.getElementById('currentChannel').textContent = channel;
 
-    // Clear previous messages
+    // Clear previous messages from UI
     document.getElementById('messagesContainer').innerHTML = '';
 
     // Update URL with channel for sharing
@@ -69,10 +71,13 @@ function setupChannelListeners() {
     // Remove any existing listeners first
     removeChannelListeners();
     
-    // Listen for new messages
+    // Listen for new messages - UPDATED
     messagesListener = database.ref(`channels/${currentChannel}/messages`).limitToLast(50).on('child_added', (snapshot) => {
-        const message = snapshot.val();
-        displayMessage(message);
+        // Only display messages if we should
+        if (shouldDisplayMessages) {
+            const message = snapshot.val();
+            displayMessage(message);
+        }
     });
 
     // Listen for online users updates - CRITICAL FIX
@@ -84,8 +89,13 @@ function setupChannelListeners() {
         
         // If channel becomes empty (0 users) and it wasn't empty before
         if (onlineCount === 0 && lastOnlineCount > 0) {
-            console.log('Channel became empty - clearing messages');
-            clearAllChannelMessages();
+            console.log('Channel became empty - hiding messages from UI');
+            hideMessagesFromUI();
+        }
+        // If channel gets users again (was empty, now has users)
+        else if (onlineCount > 0 && lastOnlineCount === 0) {
+            console.log('Channel has users again - showing messages');
+            showMessagesInUI();
         }
         
         lastOnlineCount = onlineCount;
@@ -115,29 +125,66 @@ function removeChannelListeners() {
     }
 }
 
-// Clear ALL messages from the channel (both UI and Firebase) when empty
-function clearAllChannelMessages() {
+// Hide messages from UI (but keep in database)
+function hideMessagesFromUI() {
     if (!currentChannel) return;
     
-    console.log('Clearing all messages for channel:', currentChannel);
+    console.log('Hiding messages from UI for channel:', currentChannel);
     
-    // 1. First, turn off the message listener to prevent re-display
-    removeChannelListeners();
+    // Stop displaying new messages
+    shouldDisplayMessages = false;
     
-    // 2. Clear UI immediately
+    // Clear UI
     const messagesContainer = document.getElementById('messagesContainer');
     if (messagesContainer) {
         messagesContainer.innerHTML = '';
-        addSystemMessage('Everyone left the channel. Messages have been cleared.');
+        addSystemMessage('Everyone left the channel. Messages are hidden but will return when someone joins.');
+    }
+}
+
+// Show messages in UI (when someone rejoins)
+function showMessagesInUI() {
+    if (!currentChannel) return;
+    
+    console.log('Showing messages in UI for channel:', currentChannel);
+    
+    // Allow message display
+    shouldDisplayMessages = true;
+    
+    // Clear UI first
+    const messagesContainer = document.getElementById('messagesContainer');
+    if (messagesContainer) {
+        messagesContainer.innerHTML = '';
+        addSystemMessage('Welcome back! Loading messages...');
     }
     
-    // 3. Clear messages from Firebase database
-    database.ref(`channels/${currentChannel}/messages`).remove()
-        .then(() => {
-            console.log('Messages cleared from Firebase for channel:', currentChannel);
+    // Load all messages from database
+    database.ref(`channels/${currentChannel}/messages`).limitToLast(50).once('value')
+        .then((snapshot) => {
+            const messages = [];
+            snapshot.forEach((childSnapshot) => {
+                messages.push(childSnapshot.val());
+            });
+            
+            // Sort by timestamp (oldest first)
+            messages.sort((a, b) => a.timestamp - b.timestamp);
+            
+            // Display all messages
+            messages.forEach(message => {
+                displayMessage(message);
+            });
+            
+            // Update system message
+            if (messagesContainer.querySelectorAll('.system-message').length > 1) {
+                const lastSystemMessage = messagesContainer.querySelector('.system-message:last-child');
+                if (lastSystemMessage) {
+                    lastSystemMessage.querySelector('.system-text').textContent = 
+                        `Welcome back! ${messages.length} messages loaded.`;
+                }
+            }
         })
         .catch((error) => {
-            console.error('Error clearing messages from Firebase:', error);
+            console.error('Error loading messages:', error);
         });
 }
 
@@ -156,7 +203,7 @@ function sendMessage() {
         type: 'user'
     };
 
-    // Push message to Firebase
+    // Push message to Firebase (stays in database)
     database.ref(`channels/${currentChannel}/messages`).push(message);
 
     // Clear input
@@ -166,6 +213,9 @@ function sendMessage() {
 
 // Display a message in the chat
 function displayMessage(message) {
+    // Don't display if we shouldn't
+    if (!shouldDisplayMessages) return;
+    
     const messagesContainer = document.getElementById('messagesContainer');
     const messageElement = document.createElement('div');
 
@@ -200,12 +250,18 @@ function displayMessage(message) {
 
 // Add system message
 function addSystemMessage(text) {
+    // Always show system messages
+    const originalSetting = shouldDisplayMessages;
+    shouldDisplayMessages = true;
+    
     const message = {
         text: text,
         timestamp: Date.now(),
         type: 'system'
     };
     displayMessage(message);
+    
+    shouldDisplayMessages = originalSetting;
 }
 
 // Update online users count
@@ -380,6 +436,7 @@ function leaveChannel() {
     messagesListener = null;
     onlineListener = null;
     lastOnlineCount = 1;
+    shouldDisplayMessages = true;
 }
 
 // Handle Enter key press
@@ -395,7 +452,7 @@ function formatTime(timestamp) {
     return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 }
 
-// Cleanup old messages
+// Cleanup old messages (optional - runs once)
 function cleanupOldMessages() {
     database.ref('channels').once('value', (snapshot) => {
         snapshot.forEach((channelSnapshot) => {
