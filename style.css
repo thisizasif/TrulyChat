@@ -1,0 +1,1161 @@
+/* style.css */
+/* style.css - Updated for Full-Screen Responsive Chat */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html,
+body {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    padding: 0;
+    margin: 0;
+}
+
+/* Container takes full screen */
+.container {
+    width: 100%;
+    height: 100vh;
+    max-width: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+/* Screen takes full container */
+.screen {
+    width: 100%;
+    height: 100%;
+    background: white;
+    border-radius: 0;
+    box-shadow: none;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.card {
+    padding: 40px 20px;
+    text-align: center;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    max-width: 600px;
+    margin: 0 auto;
+    width: 100%;
+}
+
+h1 {
+    color: #333;
+    margin-bottom: 15px;
+    font-size: clamp(28px, 5vw, 36px);
+}
+
+p {
+    color: #666;
+    margin-bottom: 40px;
+    font-size: clamp(16px, 3vw, 18px);
+    line-height: 1.5;
+    max-width: 500px;
+}
+
+.input-group {
+    display: flex;
+    gap: 10px;
+    margin: 40px 0;
+    width: 100%;
+    max-width: 500px;
+}
+
+input[type="number"] {
+    flex: 1;
+    padding: 18px 20px;
+    border: 2px solid #e1e5e9;
+    border-radius: 12px;
+    font-size: clamp(16px, 3vw, 18px);
+    outline: none;
+    transition: border-color 0.3s;
+    min-width: 0;
+}
+
+input[type="number"]:focus {
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+button {
+    padding: 18px 30px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    border-radius: 12px;
+    font-size: clamp(16px, 3vw, 18px);
+    font-weight: 600;
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s;
+    white-space: nowrap;
+    min-width: 140px;
+}
+
+button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+}
+
+button:active {
+    transform: translateY(0);
+}
+
+.info {
+    margin-top: 50px;
+    padding: 25px;
+    background: #f8f9fa;
+    border-radius: 12px;
+    text-align: left;
+    width: 100%;
+    max-width: 500px;
+}
+
+.info h3 {
+    color: #333;
+    margin-bottom: 20px;
+    font-size: clamp(18px, 3vw, 20px);
+}
+
+.info ul {
+    list-style: none;
+    color: #666;
+}
+
+.info li {
+    margin-bottom: 12px;
+    padding-left: 30px;
+    position: relative;
+    font-size: clamp(15px, 2.5vw, 16px);
+    line-height: 1.5;
+}
+
+.info li:before {
+    content: "✓";
+    color: #667eea;
+    position: absolute;
+    left: 0;
+    font-weight: bold;
+    font-size: 18px;
+}
+
+/* Chat Screen Styles - Full Screen */
+.chat-container {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    width: 100%;
+}
+
+.chat-header {
+    padding: clamp(15px, 3vw, 20px);
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-shrink: 0;
+    min-height: 70px;
+}
+
+.chat-header h2 {
+    font-size: clamp(18px, 4vw, 22px);
+    margin: 0;
+}
+
+.header-info {
+    display: flex;
+    align-items: center;
+    gap: clamp(10px, 2vw, 15px);
+}
+
+#onlineCount {
+    background: rgba(255, 255, 255, 0.2);
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-weight: 600;
+    font-size: clamp(14px, 2.5vw, 16px);
+}
+
+.leave-btn {
+    padding: 10px 20px;
+    background: rgba(255, 255, 255, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    font-size: clamp(14px, 2.5vw, 16px);
+    border-radius: 20px;
+    transition: background-color 0.3s;
+}
+
+.leave-btn:hover {
+    background: rgba(255, 255, 255, 0.3);
+}
+
+.messages-container {
+    flex: 1;
+    padding: 20px;
+    overflow-y: auto;
+    background: #f5f7fa;
+    -webkit-overflow-scrolling: touch;
+    min-height: 0;
+}
+
+/* Custom scrollbar */
+.messages-container::-webkit-scrollbar {
+    width: 8px;
+}
+
+.messages-container::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.05);
+    border-radius: 4px;
+}
+
+.messages-container::-webkit-scrollbar-thumb {
+    background: rgba(102, 126, 234, 0.3);
+    border-radius: 4px;
+}
+
+.messages-container::-webkit-scrollbar-thumb:hover {
+    background: rgba(102, 126, 234, 0.5);
+}
+
+.message {
+    margin-bottom: 15px;
+    display: flex;
+    flex-direction: column;
+}
+
+.message-content {
+    max-width: 85%;
+    padding: 15px 18px;
+    border-radius: 20px;
+    position: relative;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.own-message .message-content {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    align-self: flex-end;
+    border-bottom-right-radius: 5px;
+}
+
+.other-message .message-content {
+    background: white;
+    color: #333;
+    border: 1px solid #e1e5e9;
+    align-self: flex-start;
+    border-bottom-left-radius: 5px;
+}
+
+.message-sender {
+    font-size: clamp(12px, 2.5vw, 14px);
+    color: #666;
+    margin-bottom: 5px;
+    font-weight: 500;
+    padding: 0 5px;
+}
+
+.own-message .message-sender {
+    align-self: flex-end;
+    text-align: right;
+}
+
+.other-message .message-sender {
+    align-self: flex-start;
+    text-align: left;
+}
+
+.message-text {
+    line-height: 1.5;
+    font-size: clamp(15px, 2.5vw, 16px);
+}
+
+.message-time {
+    font-size: clamp(11px, 2vw, 12px);
+    margin-top: 8px;
+    opacity: 0.8;
+    display: block;
+    text-align: right;
+}
+
+.own-message .message-time {
+    color: rgba(255, 255, 255, 0.8);
+}
+
+.other-message .message-time {
+    color: #666;
+}
+
+.system-message {
+    text-align: center;
+    margin: 15px 0;
+    display: flex;
+    justify-content: center;
+}
+
+.system-text {
+    display: inline-block;
+    padding: 10px 20px;
+    background: #e9ecef;
+    color: #666;
+    border-radius: 20px;
+    font-size: clamp(13px, 2.5vw, 14px);
+    font-style: italic;
+    max-width: 80%;
+    word-break: break-word;
+}
+
+.message-input-container {
+    padding: clamp(15px, 3vw, 20px);
+    background: white;
+    border-top: 1px solid #e1e5e9;
+    display: flex;
+    gap: 10px;
+    flex-shrink: 0;
+    align-items: center;
+}
+
+#messageInput {
+    flex: 1;
+    padding: 15px 20px;
+    border: 2px solid #e1e5e9;
+    border-radius: 25px;
+    font-size: clamp(16px, 3vw, 18px);
+    outline: none;
+    transition: border-color 0.3s;
+    min-width: 0;
+}
+
+#messageInput:focus {
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+#sendBtn {
+    padding: 15px 25px;
+    border-radius: 25px;
+    font-weight: 600;
+    min-width: 100px;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .card {
+        padding: 30px 15px;
+    }
+
+    .input-group {
+        flex-direction: column;
+        gap: 15px;
+    }
+
+    input[type="number"] {
+        width: 100%;
+        padding: 16px;
+    }
+
+    button {
+        width: 100%;
+        padding: 16px;
+    }
+
+    .info {
+        padding: 20px;
+        margin-top: 30px;
+    }
+
+    .chat-header {
+        flex-direction: column;
+        gap: 10px;
+        padding: 15px;
+        text-align: center;
+    }
+
+    .header-info {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .messages-container {
+        padding: 15px;
+    }
+
+    .message-content {
+        max-width: 90%;
+        padding: 12px 15px;
+    }
+
+    .message-input-container {
+        padding: 15px;
+        flex-wrap: wrap;
+    }
+
+    #messageInput {
+        min-height: 50px;
+    }
+
+    #sendBtn {
+        min-width: 80px;
+        padding: 12px 20px;
+    }
+}
+
+@media (max-width: 480px) {
+    .card {
+        padding: 20px 12px;
+    }
+
+    h1 {
+        font-size: 24px;
+    }
+
+    p {
+        font-size: 15px;
+        margin-bottom: 30px;
+    }
+
+    .input-group {
+        margin: 30px 0;
+    }
+
+    .info {
+        margin-top: 25px;
+        padding: 15px;
+    }
+
+    .info li {
+        font-size: 14px;
+        padding-left: 25px;
+        margin-bottom: 10px;
+    }
+
+    .info li:before {
+        font-size: 16px;
+    }
+
+    .chat-header h2 {
+        font-size: 16px;
+    }
+
+    #onlineCount,
+    .leave-btn {
+        font-size: 14px;
+        padding: 6px 12px;
+    }
+
+    .message-content {
+        max-width: 95%;
+        padding: 10px 12px;
+    }
+
+    .message-text {
+        font-size: 14px;
+    }
+
+    .message-time {
+        font-size: 11px;
+    }
+
+    .system-text {
+        font-size: 13px;
+        padding: 8px 15px;
+    }
+
+    #messageInput {
+        font-size: 15px;
+        padding: 12px 15px;
+    }
+
+    #sendBtn {
+        font-size: 15px;
+        padding: 12px 15px;
+    }
+}
+
+/* Tablet Landscape */
+@media (min-width: 769px) and (max-width: 1024px) {
+    .card {
+        max-width: 700px;
+        padding: 50px 40px;
+    }
+
+    .info {
+        max-width: 600px;
+    }
+}
+
+/* Large Desktop */
+@media (min-width: 1200px) {
+    .card {
+        max-width: 800px;
+        padding: 60px 50px;
+    }
+
+    .info {
+        max-width: 700px;
+    }
+}
+
+/* Very small phones */
+@media (max-width: 360px) {
+    .card {
+        padding: 15px 10px;
+    }
+
+    h1 {
+        font-size: 22px;
+    }
+
+    p {
+        font-size: 14px;
+        margin-bottom: 20px;
+    }
+
+    .input-group {
+        margin: 20px 0;
+    }
+
+    .info {
+        padding: 12px;
+    }
+
+    .info li {
+        font-size: 13px;
+        padding-left: 20px;
+    }
+
+    .message-content {
+        padding: 8px 10px;
+    }
+}
+
+/* Orientation handling */
+@media (orientation: landscape) and (max-height: 600px) {
+    .card {
+        padding: 20px;
+        justify-content: flex-start;
+        overflow-y: auto;
+    }
+
+    .chat-container {
+        height: 100vh;
+    }
+
+    .messages-container {
+        padding: 10px;
+    }
+
+    .message-content {
+        max-width: 80%;
+        padding: 10px 12px;
+    }
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+    .screen {
+        background: #1a1a1a;
+    }
+
+    h1 {
+        color: #ffffff;
+    }
+
+    p {
+        color: #cccccc;
+    }
+
+    input[type="number"] {
+        background: #2a2a2a;
+        border-color: #444;
+        color: #ffffff;
+    }
+
+    input[type="number"]:focus {
+        border-color: #667eea;
+    }
+
+    .info {
+        background: #2a2a2a;
+    }
+
+    .info h3 {
+        color: #ffffff;
+    }
+
+    .info li {
+        color: #cccccc;
+    }
+
+    .messages-container {
+        background: #1a1a1a;
+    }
+
+    .other-message .message-content {
+        background: #2a2a2a;
+        color: #ffffff;
+        border-color: #444;
+    }
+
+    .message-sender {
+        color: #999;
+    }
+
+    .system-text {
+        background: #2a2a2a;
+        color: #999;
+    }
+
+    .message-input-container {
+        background: #1a1a1a;
+        border-color: #444;
+    }
+
+    #messageInput {
+        background: #2a2a2a;
+        border-color: #444;
+        color: #ffffff;
+    }
+
+    #messageInput:focus {
+        border-color: #667eea;
+    }
+}
+
+/* Fix for mobile keyboards */
+@media (max-height: 700px) {
+    .chat-container {
+        height: 100dvh;
+        /* Use dynamic viewport height */
+    }
+
+    .message-input-container {
+        position: sticky;
+        bottom: 0;
+        background: white;
+        z-index: 100;
+    }
+}
+
+/* Ensure proper touch targets */
+#sendBtn,
+.leave-btn {
+    min-height: 44px;
+    min-width: 44px;
+}
+
+/* Prevent zoom on input focus on iOS */
+input[type="number"],
+#messageInput {
+    font-size: 16px;
+    /* Prevent iOS zoom */
+}
+
+/* Better scrolling on mobile */
+.messages-container {
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+    scroll-behavior: smooth;
+}
+
+/* Handle keyboard appearance */
+@media (max-width: 768px) {
+    .chat-container {
+        height: 100dvh;
+    }
+
+    .message-input-container {
+        padding-bottom: max(15px, env(safe-area-inset-bottom));
+    }
+}
+
+/* Fix for iOS Safari 100vh issue */
+@supports (-webkit-touch-callout: none) {
+    .chat-container {
+        height: -webkit-fill-available;
+    }
+}
+/* style.css - UPDATED VERSION */
+/* Add these styles to your existing CSS */
+
+/* Share button styles */
+.share-btn {
+    padding: 10px 20px;
+    background: rgba(76, 175, 80, 0.9);
+    border: 1px solid rgba(76, 175, 80, 0.3);
+    font-size: clamp(14px, 2.5vw, 16px);
+    border-radius: 20px;
+    transition: background-color 0.3s;
+    color: white;
+    font-weight: 600;
+    margin-right: 10px;
+}
+
+.share-btn:hover {
+    background: rgba(76, 175, 80, 1);
+    transform: translateY(-2px);
+}
+
+.leave-btn {
+    padding: 10px 20px;
+    background: rgba(244, 67, 54, 0.9);
+    border: 1px solid rgba(244, 67, 54, 0.3);
+    font-size: clamp(14px, 2.5vw, 16px);
+    border-radius: 20px;
+    transition: background-color 0.3s;
+    color: white;
+    font-weight: 600;
+}
+
+.leave-btn:hover {
+    background: rgba(244, 67, 54, 1);
+    transform: translateY(-2px);
+}
+
+/* Update header-info spacing */
+.header-info {
+    display: flex;
+    align-items: center;
+    gap: clamp(10px, 2vw, 15px);
+}
+
+/* Adjust for mobile */
+@media (max-width: 768px) {
+    .chat-header {
+        flex-direction: column;
+        gap: 15px;
+        padding: 15px;
+    }
+    
+    .header-info {
+        width: 100%;
+        justify-content: space-between;
+    }
+    
+    .share-btn,
+    .leave-btn {
+        flex: 1;
+        margin-right: 0;
+        text-align: center;
+    }
+}
+
+@media (max-width: 480px) {
+    .share-btn,
+    .leave-btn {
+        padding: 8px 15px;
+        font-size: 14px;
+        min-width: auto;
+    }
+    
+    #onlineCount {
+        font-size: 14px;
+        padding: 6px 12px;
+    }
+}
+
+/* Dark mode support for new buttons */
+@media (prefers-color-scheme: dark) {
+    .share-btn {
+        background: rgba(76, 175, 80, 0.7);
+    }
+    
+    .leave-btn {
+        background: rgba(244, 67, 54, 0.7);
+    }
+    
+    .share-btn:hover {
+        background: rgba(76, 175, 80, 0.9);
+    }
+    
+    .leave-btn:hover {
+        background: rgba(244, 67, 54, 0.9);
+    }
+}
+/* Add to your existing style.css */
+
+/* Notification styles */
+.notification {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: #4CAF50;
+    color: white;
+    padding: 15px 20px;
+    border-radius: 8px;
+    z-index: 1000;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    animation: slideIn 0.3s ease;
+    max-width: 300px;
+    font-weight: 500;
+}
+
+.notification.error {
+    background: #f44336;
+}
+
+.notification.info {
+    background: #2196F3;
+}
+
+@keyframes slideIn {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+@keyframes fadeOut {
+    from {
+        opacity: 1;
+    }
+    to {
+        opacity: 0;
+    }
+}
+
+/* Update share button to be more prominent */
+.share-btn {
+    padding: 10px 20px;
+    background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+    border: none;
+    font-size: clamp(14px, 2.5vw, 16px);
+    border-radius: 20px;
+    transition: all 0.3s;
+    color: white;
+    font-weight: 600;
+    margin-right: 10px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    box-shadow: 0 2px 8px rgba(76, 175, 80, 0.3);
+}
+
+.share-btn:hover {
+    background: linear-gradient(135deg, #45a049 0%, #3d8b40 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(76, 175, 80, 0.4);
+}
+
+.share-btn:active {
+    transform: translateY(0);
+}
+
+/* Leave button update */
+.leave-btn {
+    padding: 10px 20px;
+    background: linear-gradient(135deg, #f44336 0%, #d32f2f 100%);
+    border: none;
+    font-size: clamp(14px, 2.5vw, 16px);
+    border-radius: 20px;
+    transition: all 0.3s;
+    color: white;
+    font-weight: 600;
+    box-shadow: 0 2px 8px rgba(244, 67, 54, 0.3);
+}
+
+.leave-btn:hover {
+    background: linear-gradient(135deg, #d32f2f 0%, #b71c1c 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(244, 67, 54, 0.4);
+}
+
+.leave-btn:active {
+    transform: translateY(0);
+}
+
+/* Online count update */
+#onlineCount {
+    background: rgba(255, 255, 255, 0.15);
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-weight: 600;
+    font-size: clamp(14px, 2.5vw, 16px);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+/* Update info section in channel screen */
+.info ul li {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.info ul li:before {
+    content: "✓";
+    color: #4CAF50;
+    font-size: 18px;
+    flex-shrink: 0;
+}
+
+/* Loading indicator */
+.loading {
+    text-align: center;
+    padding: 20px;
+    color: #666;
+    font-style: italic;
+}
+
+/* Empty state */
+.empty-state {
+    text-align: center;
+    padding: 40px 20px;
+    color: #666;
+}
+
+.empty-state h3 {
+    margin-bottom: 10px;
+    color: #333;
+}
+
+.empty-state p {
+    color: #666;
+}
+
+/* Update for dark mode */
+@media (prefers-color-scheme: dark) {
+    .notification {
+        background: #2e7d32;
+        color: white;
+    }
+    
+    .notification.error {
+        background: #c62828;
+    }
+    
+    .notification.info {
+        background: #1565c0;
+    }
+    
+    .share-btn {
+        background: linear-gradient(135deg, #2e7d32 0%, #1b5e20 100%);
+    }
+    
+    .leave-btn {
+        background: linear-gradient(135deg, #c62828 0%, #b71c1c 100%);
+    }
+    
+    #onlineCount {
+        background: rgba(255, 255, 255, 0.1);
+    }
+}
+/* Add these animations to your style.css */
+
+@keyframes slideIn {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+@keyframes fadeOut {
+    from {
+        opacity: 1;
+    }
+    to {
+        opacity: 0;
+    }
+}
+
+/* Modal styles */
+.modal-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 2000;
+    animation: fadeIn 0.3s ease;
+}
+
+.modal-content {
+    background: white;
+    padding: 30px;
+    border-radius: 12px;
+    max-width: 500px;
+    width: 90%;
+    animation: slideUp 0.3s ease;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes slideUp {
+    from {
+        transform: translateY(20px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+/* Update loading state animation */
+.loading {
+    text-align: center;
+    padding: 40px 20px;
+    color: #666;
+}
+
+.loading p {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.loading p::after {
+    content: '';
+    width: 20px;
+    height: 20px;
+    border: 2px solid #667eea;
+    border-top-color: transparent;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* Add these styles to your existing style.css */
+
+/* Share button styles */
+.share-btn {
+    padding: 10px 20px;
+    background: #4CAF50;
+    color: white;
+    border: none;
+    border-radius: 20px;
+    font-size: clamp(14px, 2.5vw, 16px);
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.3s;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.share-btn:hover {
+    background: #45a049;
+}
+
+/* Update header-info to accommodate new button */
+.header-info {
+    display: flex;
+    align-items: center;
+    gap: clamp(10px, 2vw, 15px);
+}
+
+/* Ensure online count looks good */
+#onlineCount {
+    background: rgba(255, 255, 255, 0.2);
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-weight: 600;
+    font-size: clamp(14px, 2.5vw, 16px);
+}
+
+/* Update leave button for consistency */
+.leave-btn {
+    padding: 10px 20px;
+    background: rgba(255, 255, 255, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    font-size: clamp(14px, 2.5vw, 16px);
+    border-radius: 20px;
+    transition: background-color 0.3s;
+    color: white;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.leave-btn:hover {
+    background: rgba(255, 255, 255, 0.3);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .chat-header {
+        flex-direction: column;
+        gap: 10px;
+        padding: 15px;
+        text-align: center;
+    }
+    
+    .header-info {
+        width: 100%;
+        justify-content: center;
+        flex-wrap: wrap;
+    }
+    
+    .share-btn, .leave-btn {
+        padding: 8px 16px;
+        font-size: 14px;
+    }
+    
+    #onlineCount {
+        font-size: 14px;
+        padding: 6px 12px;
+    }
+}
+
+@media (max-width: 480px) {
+    .share-btn, .leave-btn {
+        padding: 6px 12px;
+        font-size: 13px;
+    }
+    
+    #onlineCount {
+        font-size: 13px;
+        padding: 5px 10px;
+    }
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+    .share-btn {
+        background: #2e7d32;
+    }
+    
+    .share-btn:hover {
+        background: #1b5e20;
+    }
+}
