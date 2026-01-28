@@ -1,12 +1,12 @@
-// app.js - FIXED: Messages stay in database, only UI clears
+// app.js - FIXED: Messages in DB, UI clears when channel was empty
 let currentChannel = null;
 let userId = null;
 let userName = null;
 let userRef = null;
 let messagesListener = null;
 let onlineListener = null;
-let lastOnlineCount = 1;
-let shouldDisplayMessages = true; // NEW: Control message display
+let lastOnlineCount = 0;
+let joinTimestamp = null; // Track when user joined
 
 // Generate random user ID and name
 function generateUserId() {
@@ -14,7 +14,7 @@ function generateUserId() {
 }
 
 function generateRandomName() {
-    const adjectives = ['Swift', 'Clever', 'Brave', 'Calm', 'Eager', 'Gentle', 'Happy', 'Jolly', 'Kind', 'Lucky'];
+    const adjectives = ['Ashu', 'Asba', 'Kashmir', 'Akii', 'Eager', 'Gentle', 'Happy', 'Jolly', 'Kind', 'Lucky'];
     const nouns = ['Tiger', 'Eagle', 'Dolphin', 'Wolf', 'Fox', 'Bear', 'Lion', 'Owl', 'Hawk', 'Shark'];
     const adj = adjectives[Math.floor(Math.random() * adjectives.length)];
     const noun = nouns[Math.floor(Math.random() * nouns.length)];
@@ -24,7 +24,7 @@ function generateRandomName() {
 // Join a channel
 function joinChannel(channelFromUrl = null) {
     let channel;
-    
+
     if (channelFromUrl) {
         channel = channelFromUrl;
     } else {
@@ -42,8 +42,8 @@ function joinChannel(channelFromUrl = null) {
     currentChannel = channel;
     userId = generateUserId();
     userName = generateRandomName();
-    lastOnlineCount = 1;
-    shouldDisplayMessages = true; // Allow message display
+    joinTimestamp = Date.now(); // Set join time
+    lastOnlineCount = 0;
 
     // Switch to chat screen
     document.getElementById('channelScreen').style.display = 'none';
@@ -70,35 +70,29 @@ function joinChannel(channelFromUrl = null) {
 function setupChannelListeners() {
     // Remove any existing listeners first
     removeChannelListeners();
-    
-    // Listen for new messages - UPDATED
-    messagesListener = database.ref(`channels/${currentChannel}/messages`).limitToLast(50).on('child_added', (snapshot) => {
-        // Only display messages if we should
-        if (shouldDisplayMessages) {
-            const message = snapshot.val();
-            displayMessage(message);
-        }
-    });
 
-    // Listen for online users updates - CRITICAL FIX
+    // Listen for online users updates
     onlineListener = database.ref(`channels/${currentChannel}/online`).on('value', (snapshot) => {
         const onlineCount = snapshot.numChildren();
         updateOnlineCount(onlineCount);
-        
+
         console.log(`Online count: ${onlineCount}, Last: ${lastOnlineCount}`);
-        
-        // If channel becomes empty (0 users) and it wasn't empty before
-        if (onlineCount === 0 && lastOnlineCount > 0) {
-            console.log('Channel became empty - hiding messages from UI');
-            hideMessagesFromUI();
-        }
-        // If channel gets users again (was empty, now has users)
-        else if (onlineCount > 0 && lastOnlineCount === 0) {
-            console.log('Channel has users again - showing messages');
-            showMessagesInUI();
-        }
-        
+
+        // Store the previous count
         lastOnlineCount = onlineCount;
+    });
+
+    // Listen for NEW messages - CRITICAL FIX
+    messagesListener = database.ref(`channels/${currentChannel}/messages`).on('child_added', (snapshot) => {
+        const message = snapshot.val();
+
+        // Only display messages sent AFTER this user joined
+        // This ensures new users don't see old messages
+        if (message.timestamp >= joinTimestamp) {
+            displayMessage(message);
+        } else {
+            console.log('Skipping old message:', message.text, 'Timestamp:', message.timestamp, 'Join time:', joinTimestamp);
+        }
     });
 
     // Add current user to online list
@@ -123,69 +117,6 @@ function removeChannelListeners() {
         database.ref(`channels/${currentChannel}/online`).off('value', onlineListener);
         onlineListener = null;
     }
-}
-
-// Hide messages from UI (but keep in database)
-function hideMessagesFromUI() {
-    if (!currentChannel) return;
-    
-    console.log('Hiding messages from UI for channel:', currentChannel);
-    
-    // Stop displaying new messages
-    shouldDisplayMessages = false;
-    
-    // Clear UI
-    const messagesContainer = document.getElementById('messagesContainer');
-    if (messagesContainer) {
-        messagesContainer.innerHTML = '';
-        addSystemMessage('Everyone left the channel. Messages are hidden but will return when someone joins.');
-    }
-}
-
-// Show messages in UI (when someone rejoins)
-function showMessagesInUI() {
-    if (!currentChannel) return;
-    
-    console.log('Showing messages in UI for channel:', currentChannel);
-    
-    // Allow message display
-    shouldDisplayMessages = true;
-    
-    // Clear UI first
-    const messagesContainer = document.getElementById('messagesContainer');
-    if (messagesContainer) {
-        messagesContainer.innerHTML = '';
-        addSystemMessage('Welcome back! Loading messages...');
-    }
-    
-    // Load all messages from database
-    database.ref(`channels/${currentChannel}/messages`).limitToLast(50).once('value')
-        .then((snapshot) => {
-            const messages = [];
-            snapshot.forEach((childSnapshot) => {
-                messages.push(childSnapshot.val());
-            });
-            
-            // Sort by timestamp (oldest first)
-            messages.sort((a, b) => a.timestamp - b.timestamp);
-            
-            // Display all messages
-            messages.forEach(message => {
-                displayMessage(message);
-            });
-            
-            // Update system message
-            if (messagesContainer.querySelectorAll('.system-message').length > 1) {
-                const lastSystemMessage = messagesContainer.querySelector('.system-message:last-child');
-                if (lastSystemMessage) {
-                    lastSystemMessage.querySelector('.system-text').textContent = 
-                        `Welcome back! ${messages.length} messages loaded.`;
-                }
-            }
-        })
-        .catch((error) => {
-            console.error('Error loading messages:', error);
-        });
 }
 
 // Send a message
@@ -213,9 +144,6 @@ function sendMessage() {
 
 // Display a message in the chat
 function displayMessage(message) {
-    // Don't display if we shouldn't
-    if (!shouldDisplayMessages) return;
-    
     const messagesContainer = document.getElementById('messagesContainer');
     const messageElement = document.createElement('div');
 
@@ -250,18 +178,12 @@ function displayMessage(message) {
 
 // Add system message
 function addSystemMessage(text) {
-    // Always show system messages
-    const originalSetting = shouldDisplayMessages;
-    shouldDisplayMessages = true;
-    
     const message = {
         text: text,
         timestamp: Date.now(),
         type: 'system'
     };
     displayMessage(message);
-    
-    shouldDisplayMessages = originalSetting;
 }
 
 // Update online users count
@@ -286,7 +208,7 @@ function shareChannel() {
     }
 
     const channelLink = `${window.location.origin}${window.location.pathname}?channel=${currentChannel}`;
-    
+
     // Create modal for sharing
     const modal = document.createElement('div');
     modal.style.cssText = `
@@ -301,7 +223,7 @@ function shareChannel() {
         align-items: center;
         z-index: 2000;
     `;
-    
+
     modal.innerHTML = `
         <div style="background: white; padding: 25px; border-radius: 10px; max-width: 500px; width: 90%;">
             <h3 style="margin: 0 0 15px 0; color: #333;">📤 Share Channel ${currentChannel}</h3>
@@ -321,16 +243,16 @@ function shareChannel() {
             </div>
         </div>
     `;
-    
+
     document.body.appendChild(modal);
-    
+
     // Add copy functionality
-    document.getElementById('copyBtn').onclick = function() {
+    document.getElementById('copyBtn').onclick = function () {
         copyToClipboard(channelLink, this);
     };
-    
+
     // Close on background click
-    modal.addEventListener('click', function(e) {
+    modal.addEventListener('click', function (e) {
         if (e.target === modal) {
             document.body.removeChild(modal);
         }
@@ -343,7 +265,7 @@ function copyToClipboard(text, button) {
         navigator.clipboard.writeText(text).then(() => {
             button.innerHTML = '✓ Copied!';
             button.style.background = '#2E7D32';
-            
+
             setTimeout(() => {
                 const modal = button.closest('div[style*="position: fixed"]');
                 if (modal) {
@@ -368,10 +290,10 @@ function fallbackCopy(text, button) {
     textarea.select();
     document.execCommand('copy');
     document.body.removeChild(textarea);
-    
+
     button.innerHTML = '✓ Copied!';
     button.style.background = '#2E7D32';
-    
+
     setTimeout(() => {
         const modal = button.closest('div[style*="position: fixed"]');
         if (modal) {
@@ -391,7 +313,7 @@ function updateURLWithChannel(channel) {
 function checkURLForChannel() {
     const urlParams = new URLSearchParams(window.location.search);
     const channel = urlParams.get('channel');
-    
+
     if (channel && channel >= 1 && channel <= 9999) {
         // Auto-join the channel
         joinChannel(channel);
@@ -411,7 +333,7 @@ function leaveChannel() {
 
         // Remove Firebase listeners
         removeChannelListeners();
-        
+
         // Remove onDisconnect handler
         if (userRef) {
             userRef.onDisconnect().cancel();
@@ -435,8 +357,8 @@ function leaveChannel() {
     userRef = null;
     messagesListener = null;
     onlineListener = null;
-    lastOnlineCount = 1;
-    shouldDisplayMessages = true;
+    lastOnlineCount = 0;
+    joinTimestamp = null;
 }
 
 // Handle Enter key press
