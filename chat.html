@@ -1,0 +1,109 @@
+﻿<!-- index.html - ADD SHARE BUTTON -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="noindex, nofollow">
+    <link rel="canonical" href="https://thisizasif.github.io/TrulyChat/chat.html">
+    <title>Channel Chat - Firebase</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Sora:wght@600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    </head>
+<body class="chat-body">
+    <div class="container">
+        <!-- Chat Screen -->
+        <div id="chatScreen" class="screen" style="display: none;">
+            <div class="chat-container">
+                <div class="chat-header">
+                    <div class="header-left">
+                        <div class="header-line">
+                            <h2>Channel: <span id="currentChannel">---</span></h2>
+                            <div class="online-badge"><span id="onlineCount">0</span> online</div>
+                            <div class="user-badge">You: <span id="currentUserName" class="user-name">---</span></div>
+                        </div>
+                    </div>
+                    <div class="header-actions">
+                        <button onclick="leaveChannel()" class="leave-btn">Leave</button>
+                        <button id="nextChannelBtn" class="next-btn" type="button">Next</button>
+                        <button id="menuToggle" class="menu-btn" type="button" aria-label="Open menu" aria-expanded="false">&#9776;</button>
+                    </div>
+                </div>
+
+                <div class="chat-tools">
+                    <div class="search-group">
+                        <input type="text" id="searchInput" placeholder="Search messages...">
+                        <div id="typingIndicatorMobile" class="typing-indicator typing-inline"></div>
+                    </div>
+                    <div class="chat-actions">
+                        <button id="changeNameBtnDesktop" type="button">Change name</button>
+                    </div>
+                    <div id="typingIndicator" class="typing-indicator"></div>
+                </div>
+
+                <div id="onlineUsers" class="online-users"></div>
+
+                <div id="menuBackdrop" class="menu-backdrop"></div>
+                <aside id="menuPanel" class="menu-panel" aria-hidden="true">
+                    <div class="menu-header">
+                        <div class="menu-title">Channel Menu</div>
+                        <button id="menuClose" class="menu-close" type="button" aria-label="Close menu">X</button>
+                    </div>
+                    <div class="menu-section">
+                        <div class="menu-label">Actions</div>
+                        <button onclick="shareChannel()" class="menu-item">Invite</button>
+                        <button id="changeNameBtn" class="menu-item" type="button">Change name</button>
+                        <button id="clearChatBtn" class="menu-item" type="button">Clear chat</button>
+                    </div>
+                    <div class="menu-section">
+                        <div class="menu-label">Preferences</div>
+                        <button id="themeToggleBtn" class="menu-item" type="button">Theme: System</button>
+                        <button id="helpBtn" class="menu-item" type="button">Quick help</button>
+                    </div>
+                    <div class="menu-section">
+                        <div class="menu-label">Pages</div>
+                        <a href="help.html" class="menu-item menu-link">Help page</a>
+                        <a href="faq.html" class="menu-item menu-link">FAQ</a>
+                        <a href="about.html" class="menu-item menu-link">About</a>
+                        <a href="privacy.html" class="menu-item menu-link">Privacy</a>
+                    </div>
+                    <div class="menu-section">
+                        <div class="menu-label">Online</div>
+                        <div class="menu-online" id="menuOnlineCount">0 online</div>
+                        <div class="menu-users" id="menuOnlineUsers"></div>
+                    </div>
+                </aside>
+
+                <!-- Messages Container -->
+                <div id="messagesContainer" class="messages-container">
+                    <!-- Messages will appear here -->
+                </div>
+
+                <!-- Message Input -->
+                <div class="message-input-container">
+                    <div id="replyPreview" class="reply-preview" style="display: none;">
+                        <div class="reply-info">
+                            Replying to <span id="replyName">User</span>
+                        </div>
+                        <div id="replyText" class="reply-text"></div>
+                        <button id="cancelReplyBtn" class="reply-cancel" type="button" aria-label="Cancel reply">&times;</button>
+                    </div>
+                    <div class="input-row">
+                        <input type="text" id="messageInput" placeholder="Type your message..." onkeypress="handleKeyPress(event)">
+                        <button onclick="sendMessage()" id="sendBtn">Send</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="firebase-config.js"></script>
+    <script src="config.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
+

@@ -1,68 +1,158 @@
-<!-- index.html - ADD SHARE BUTTON -->
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="landing-html">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Channel Chat - Firebase</title>
+    <title>TrulyChat - Instant Private Channel Chat</title>
+    <meta name="description" content="TrulyChat lets you create instant private chat rooms with a channel number. No sign-up, fast sharing, and secure conversations.">
+    <meta name="robots" content="index, follow">
+    <meta name="theme-color" content="#0ea5a4">
+    <meta name="application-name" content="TrulyChat">
+    <meta name="author" content="thisizasif">
+    <meta name="keywords" content="private chat room, channel chat, room code chat, chat by number, instant chat, no sign up chat, anonymous chat room, temporary chat room, quick chat, real time chat, private group chat, secure chat, shareable chat link, invite by number, simple chat app, instant messaging, private conversation, random channel chat, chat room with code, room number chat, one time chat">
+    <meta name="HandheldFriendly" content="True">
+    <meta name="MobileOptimized" content="320">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="TrulyChat">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="canonical" href="https://thisizasif.github.io/TrulyChat/">
+    <meta property="og:title" content="TrulyChat - Instant Private Channel Chat">
+    <meta property="og:description" content="Create instant private chat rooms with a channel number. No sign-up, fast sharing, and secure conversations.">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://thisizasif.github.io/TrulyChat/">
+    <meta property="og:site_name" content="TrulyChat">
+    <meta property="og:image" content="https://thisizasif.github.io/TrulyChat/trulychat.png">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="TrulyChat - Instant Private Channel Chat">
+    <meta name="twitter:description" content="Create instant private chat rooms with a channel number. No sign-up, fast sharing, and secure conversations.">
+    <meta name="twitter:image" content="https://thisizasif.github.io/TrulyChat/trulychat.png">
+    <link rel="icon" href="trulychat.png">
+    <link rel="apple-touch-icon" href="trulychat.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Sora:wght@600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
 </head>
-<body>
+<body class="landing-body">
     <div class="container">
-        <!-- Channel Selection Screen -->
-        <div id="channelScreen" class="screen">
-            <div class="card">
-                <h1>📱 Channel Chat</h1>
-                <p>Enter a channel number to join or create a chat room</p>
-                
-                <div class="input-group">
-                    <input type="number" id="channelInput" placeholder="Enter channel number" min="1" max="9999">
-                    <button onclick="joinChannel()" id="joinBtn">Join Channel</button>
+        <div id="channelScreen" class="screen landing-screen">
+            <header class="landing-nav">
+                <div class="brand">
+                    <img src="trulychat.png" alt="TrulyChat logo" class="brand-logo">
+                    <span class="brand-name">TrulyChat</span>
                 </div>
-                
-                <div class="info">
-                    <h3>How it works:</h3>
-                    <ul>
-                        <li>Enter any number (1-9999)</li>
-                        <li>Others who enter the same number can chat with you</li>
-                        <li>No registration required</li>
-                        <li>Chat in real-time</li>
-                        <li>Share link to invite others</li>
-                        <li>Chat clears from screen when everyone leaves</li>
-                    </ul>
-                </div>
-            </div>
-        </div>
+                <nav class="landing-links">
+                    <a href="help.html">Help</a>
+                    <a href="faq.html">FAQ</a>
+                    <a href="privacy.html">Privacy</a>
+                </nav>
+            </header>
 
-        <!-- Chat Screen (Hidden Initially) -->
-        <div id="chatScreen" class="screen" style="display: none;">
-            <div class="chat-container">
-                <div class="chat-header">
-                    <h2>Channel: <span id="currentChannel">---</span></h2>
-                    <div class="header-info">
-                        <span id="onlineCount">0</span> online
-                        <button onclick="shareChannel()" class="share-btn" style="margin-right: 10px;">📤 Invite</button>
-                        <button onclick="leaveChannel()" class="leave-btn">Leave</button>
+            <div class="landing-shell">
+                <section class="landing-copy">
+                    <div class="hero-badge">Instant &middot; Private &middot; No sign-up</div>
+                    <h1>TrulyChat for fast, private rooms</h1>
+                    <p>Create a room with a number, invite friends, and start chatting in seconds. No accounts, no hassle.</p>
+
+                    <div class="feature-grid">
+                        <div class="feature-card">
+                            <div class="feature-icon">&#x26A1;</div>
+                            <div class="feature-title">Instant rooms</div>
+                            <div class="feature-text">Join with any number and chat right away.</div>
+                        </div>
+                        <div class="feature-card">
+                            <div class="feature-icon">&#x1F512;</div>
+                            <div class="feature-title">Private by default</div>
+                            <div class="feature-text">Only people with your number can enter.</div>
+                        </div>
+                        <div class="feature-card">
+                            <div class="feature-icon">&#x1F517;</div>
+                            <div class="feature-title">Shareable links</div>
+                            <div class="feature-text">Invite others in a single click.</div>
+                        </div>
                     </div>
-                </div>
 
-                <!-- Messages Container -->
-                <div id="messagesContainer" class="messages-container">
-                    <!-- Messages will appear here -->
-                </div>
+                    <div class="steps">
+                        <div class="step">
+                            <span class="step-num">1</span>
+                            <span class="step-text">Pick a name</span>
+                        </div>
+                        <div class="step">
+                            <span class="step-num">2</span>
+                            <span class="step-text">Choose a channel</span>
+                        </div>
+                        <div class="step">
+                            <span class="step-num">3</span>
+                            <span class="step-text">Start chatting</span>
+                        </div>
+                    </div>
+                </section>
 
-                <!-- Message Input -->
-                <div class="message-input-container">
-                    <input type="text" id="messageInput" placeholder="Type your message..." onkeypress="handleKeyPress(event)">
-                    <button onclick="sendMessage()" id="sendBtn">Send</button>
-                </div>
+                <aside class="join-panel">
+                    <div class="join-header">
+                        <h2>Join a channel</h2>
+                        <p>Enter your name and a channel number to start.</p>
+                        <span class="join-subtitle">No sign-up required</span>
+                    </div>
+                    <div class="input-group input-stack join-form">
+                        <label class="field">
+                            <span>Your name</span>
+                            <input type="text" id="nameInput" placeholder="Asif Nazir" maxlength="24" autocomplete="nickname">
+                            <small class="field-hint">This is visible to others in the room.</small>
+                        </label>
+                        <label class="field">
+                            <span>Channel number</span>
+                            <input type="number" id="channelInput" placeholder="1-9999" min="1" max="9999">
+                            <small class="field-hint">Share this number to invite people.</small>
+                        </label>
+                        <button id="joinBtn" type="button">Join Channel</button>
+                        <button id="quickJoin111Btn" type="button" class="secondary-btn">Join Channel 111</button>
+                        <div id="joinError" class="join-error" role="alert"></div>
+                    </div>
+                    <div class="join-note">Tip: share your channel number with friends to join instantly.</div>
+                </aside>
             </div>
+            <section class="landing-ad" aria-label="Sponsored">
+                <div class="ad-slot">
+                    <div id="container-be8098078028b58d360e27d39b0de755"></div>
+                </div>
+                <script async="async" data-cfasync="false" src="https://pl28663481.effectivegatecpm.com/be8098078028b58d360e27d39b0de755/invoke.js"></script>
+                <!-- <script src="https://pl28663427.effectivegatecpm.com/c6/3f/9e/c63f9e205f4bc872eed6b6ae78bcfaf7.js"></script> -->
+                <script>
+                  atOptions = {
+                    'key' : 'ab2ea196c29b3317b49e496320a8e8fe',
+                    'format' : 'iframe',
+                    'height' : 60,
+                    'width' : 468,
+                    'params' : {}
+                  };
+                </script>
+                <script src="https://www.highperformanceformat.com/ab2ea196c29b3317b49e496320a8e8fe/invoke.js"></script>
+            </section>
+            <footer class="landing-footer">
+                <p>By entering a channel, you agree to keep conversations respectful. Share your channel number only with people you trust.</p>
+            </footer>
         </div>
     </div>
 
-    <script src="firebase-config.js"></script>
-    <script src="app.js"></script>
+    <script src="config.js"></script>
+    <script src="landing.js"></script>
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      "name": "TrulyChat",
+      "url": "https://thisizasif.github.io/TrulyChat/",
+      "description": "Instant private chat rooms with a channel number. No sign-up required."
+    }
+    </script>
+    <script>
+        (function () {
+            const theme = localStorage.getItem('trulychat_theme') || 'system';
+            if (theme === 'dark') document.body.classList.add('theme-dark');
+            if (theme === 'light') document.body.classList.add('theme-light');
+        })();
+    </script>
 </body>
 </html>

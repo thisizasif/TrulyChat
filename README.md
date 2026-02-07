@@ -1,91 +1,72 @@
 <div align="center">
-
-# TrulyChat
-
-<sup>Lightweight · Real-Time · Anonymous</sup>
-
-<br>
-
-<img src="https://img.shields.io/badge/Status-Active-brightgreen" alt="Status">
-<img src="https://img.shields.io/badge/Platform-Web-blue" alt="Platform">
-<img src="https://img.shields.io/badge/No_Login-Required-success" alt="No Login">
-<img src="https://img.shields.io/badge/Real_Time-Chat-orange" alt="Real Time">
-
-<br><br>
-
-<strong>Join any channel. Chat instantly. No setup required.</strong>
-
+  <img src="trulychat.png" alt="TrulyChat" width="120" height="120" />
+  <h1>TrulyChat</h1>
+  <p>Instant private channel chat. No sign-up. Share a number, start talking.</p>
 </div>
 
----
+<div align="center">
+  <img alt="GitHub Pages" src="https://img.shields.io/badge/GitHub%20Pages-Ready-0ea5a4?style=for-the-badge&logo=github" />
+  <img alt="Firebase" src="https://img.shields.io/badge/Firebase-Realtime_DB-ffca28?style=for-the-badge&logo=firebase" />
+  <img alt="HTML5" src="https://img.shields.io/badge/HTML5-Structure-e34f26?style=for-the-badge&logo=html5" />
+  <img alt="CSS3" src="https://img.shields.io/badge/CSS3-Styling-1572b6?style=for-the-badge&logo=css3" />
+  <img alt="JavaScript" src="https://img.shields.io/badge/JavaScript-Logic-f7df1e?style=for-the-badge&logo=javascript&logoColor=000000" />
+  <img alt="Responsive UI" src="https://img.shields.io/badge/Responsive-UI-22c55e?style=for-the-badge" />
+</div>
 
-## ✨ Overview
+<div align="center">
+  <a href="https://thisizasif.github.io/TrulyChat/">Live Demo</a>
+  ·
+  <a href="help.html">Help</a>
+  ·
+  <a href="faq.html">FAQ</a>
+  ·
+  <a href="privacy.html">Privacy</a>
+</div>
 
-**TrulyChat** is a minimalist, real-time, channel-based chat application built for instant communication without friction.  
-Users can join any channel using a simple numeric ID and start chatting immediately — no accounts, no setup, no barriers.
+**What is TrulyChat**
+TrulyChat lets anyone create a private chat room using a channel number. Share the number, chat live, and move on whenever you want. No accounts, no friction.
 
-The application is designed for temporary and spontaneous conversations. Instead of managing contacts or invitations, users simply enter the same channel number and communicate in real time across all connected devices.
+**Highlights**
+- Channel-based chat with shareable room numbers
+- Real-time messaging using Firebase Realtime Database
+- Typing indicator, reply preview, edit, delete, copy, reactions
+- Mobile-first UI with a consistent hamburger menu
+- SEO-ready landing + help/about/privacy pages
 
-**Core philosophy:**  
-`Simple · Fast · Anonymous · Accessible`
+**Pages**
+- `index.html` — landing and join page
+- `chat.html` — chat experience
+- `help.html` — quick help guide
+- `faq.html` — FAQs with structured data
+- `about.html` — product overview
+- `privacy.html` — privacy notes
 
----
+**Configuration**
+- `config.js` — set the max channel number:
 
-## 🚀 How It Works
-
-| Step | Action | Description |
-|-----:|--------|-------------|
-| 1 | Enter Channel | Choose a number between 1–9999 |
-| 2 | Connect | Instantly connects via Firebase |
-| 3 | Identity | Assigned a random anonymous name |
-| 4 | Chat | Messages sync in real time |
-| 5 | Presence | Live online user count |
-| 6 | Leave | Exit anytime |
-
----
-
-## 🔑 Key Features
-
-- **Instant Channel-Based Chat**
-- **No Registration Required**
-- **Real-Time Synchronization**
-- **Live Online Count**
-- **Responsive UI**
-- **Auto-Generated Display Names**
-
----
-
-## 🛠️ Technology Stack
-
-| Layer | Technology |
-|------|-----------|
-| Frontend | HTML, CSS, JavaScript |
-| Database | Firebase Realtime Database |
-| Hosting | Firebase Hosting / Static |
-
----
-
-## 📁 Project Structure
-
-```text
-trulychat/
-├── index.html
-├── style.css
-├── app.js
-├── firebase-config.js
-└── README.md
+```js
+window.TRULYCHAT_MAX_CHANNEL_NUMBER = 100;
 ```
 
----
+- `firebase-config.js` — your Firebase project config
 
-## 👨‍💻 Developer
+**Local Development**
+1. Open the folder in VS Code.
+2. Use Live Server or run a static server:
 
-**Asif**  
-GitHub: https://github.com/thisizasif  
-Portfolio: https://thisizasif.github.io  
+```bash
+python -m http.server 5500
+```
 
----
+3. Visit `http://localhost:5500/index.html`.
 
-## 📄 License
+**SEO Assets**
+- `sitemap.xml`
+- `robots.txt`
 
-Open-source project. Free to use with attribution.
+**Deployment**
+This project is designed for GitHub Pages. Push to the `TrulyChat` repo and enable Pages on the `main` branch.
+
+**Notes**
+- Keep `firebase-config.js` credentials in sync with your Firebase project.
+- Update the canonical URLs in `index.html`, `sitemap.xml`, and page heads if your domain changes.
