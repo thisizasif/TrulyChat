@@ -17,6 +17,14 @@ let currentUserKey = null;
 let currentTheme = 'system';
 let pendingReply = null;
 let typingLastSent = 0;
+// Defaults when opening chat.html directly without a channel
+const DEFAULT_DIRECT_CHANNEL = '111';
+const DEFAULT_DIRECT_NAME = 'iLOveSky';
+let unreadCount = 0;
+let soundEnabled = false;
+let soundReady = false;
+let audioContext = null;
+const SOUND_TOGGLE_KEY = 'trulychat_sound_enabled';
 
 const REACTIONS = {
     like: '&#x1F44D;',
@@ -97,6 +105,110 @@ function getInitials(name) {
     return (first + last).toUpperCase();
 }
 
+function isNearBottom(container, threshold = 100) {
+    if (!container) return true;
+    const distance = container.scrollHeight - container.scrollTop - container.clientHeight;
+    return distance <= threshold;
+}
+
+function updateUnreadIndicator() {
+    const button = document.getElementById('scrollToLatestBtn');
+    const badge = document.getElementById('scrollUnreadCount');
+    if (!button || !badge) return;
+    badge.textContent = unreadCount > 99 ? '99+' : String(unreadCount);
+    if (unreadCount > 0) {
+        button.classList.add('show');
+        button.classList.add('has-unread');
+    } else {
+        button.classList.remove('has-unread');
+    }
+}
+
+function showScrollToLatestButton() {
+    const button = document.getElementById('scrollToLatestBtn');
+    if (!button) return;
+    button.classList.add('show');
+}
+
+function hideScrollToLatestButton() {
+    const button = document.getElementById('scrollToLatestBtn');
+    if (!button) return;
+    button.classList.remove('show');
+    button.classList.remove('has-unread');
+}
+
+function resetUnreadIndicator() {
+    unreadCount = 0;
+    updateUnreadIndicator();
+}
+
+function scrollToBottom(behavior = 'smooth') {
+    const container = document.getElementById('messagesContainer');
+    if (!container) return;
+    container.scrollTo({ top: container.scrollHeight, behavior });
+}
+
+function ensureAudioContext() {
+    if (audioContext) return audioContext;
+    try {
+        audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    } catch (error) {
+        audioContext = null;
+    }
+    return audioContext;
+}
+
+function playNotificationSound() {
+    if (!soundEnabled || !soundReady) return;
+    const ctx = ensureAudioContext();
+    if (!ctx) return;
+    if (ctx.state === 'suspended') {
+        ctx.resume().catch(() => {});
+    }
+    const oscillator = ctx.createOscillator();
+    const gain = ctx.createGain();
+    oscillator.type = 'sine';
+    oscillator.frequency.value = 760;
+    gain.gain.value = 0.04;
+    oscillator.connect(gain);
+    gain.connect(ctx.destination);
+    oscillator.start();
+    oscillator.stop(ctx.currentTime + 0.08);
+}
+
+function setSoundEnabled(enabled) {
+    soundEnabled = Boolean(enabled);
+    localStorage.setItem(SOUND_TOGGLE_KEY, soundEnabled ? '1' : '0');
+    const button = document.getElementById('soundToggleBtn');
+    if (button) {
+        button.textContent = `Sound: ${soundEnabled ? 'On' : 'Off'}`;
+    }
+    if (soundEnabled) {
+        const ctx = ensureAudioContext();
+        if (ctx && ctx.state === 'suspended') {
+            ctx.resume().then(() => {
+                soundReady = true;
+            }).catch(() => {
+                soundReady = false;
+            });
+        } else {
+            soundReady = true;
+        }
+    } else {
+        soundReady = false;
+    }
+}
+
+function initSoundToggle() {
+    const stored = localStorage.getItem(SOUND_TOGGLE_KEY);
+    if (stored === null) {
+        const mobileDefaultOff = window.matchMedia('(max-width: 768px)').matches;
+        setSoundEnabled(!mobileDefaultOff);
+    } else {
+        setSoundEnabled(stored === '1');
+    }
+}
+
 // Join a channel
 async function joinChannel(channelFromUrl = null) {
     let channel;
@@ -161,6 +273,8 @@ async function joinChannel(channelFromUrl = null) {
         messagesContainer.innerHTML = '';
     }
     showEmptyState();
+    resetUnreadIndicator();
+    hideScrollToLatestButton();
 
     // Update URL with channel for sharing
     updateURLWithChannel(channel);
@@ -299,6 +413,7 @@ function displayMessage(message, messageId) {
     const messagesContainer = document.getElementById('messagesContainer');
     const messageElement = document.createElement('div');
     removeEmptyState();
+    const wasNearBottom = isNearBottom(messagesContainer);
 
     const safeText = escapeHTML(message.text || '');
     const safeName = escapeHTML(message.userName || '');
@@ -397,7 +512,26 @@ function displayMessage(message, messageId) {
     });
 
     messagesContainer.appendChild(messageElement);
-    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    const isOwnMessage = message.userId === userId;
+    const isSystemMessage = message.type === 'system';
+    if (wasNearBottom || isOwnMessage) {
+        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        resetUnreadIndicator();
+        if (!isNearBottom(messagesContainer)) {
+            showScrollToLatestButton();
+        } else {
+            hideScrollToLatestButton();
+        }
+    } else {
+        if (!isOwnMessage && !isSystemMessage) {
+            unreadCount += 1;
+            updateUnreadIndicator();
+            showScrollToLatestButton();
+        }
+    }
+    if (!isOwnMessage && !isSystemMessage) {
+        playNotificationSound();
+    }
     filterMessages();
 }
 
@@ -567,7 +701,7 @@ function updateTypingIndicator(snapshot) {
         typingCount += 1;
     });
 
-    const text = typingCount === 0 ? '' : 'Typing...';
+    const text = typingCount === 0 ? '' : 'Typing';
     if (indicator) indicator.textContent = text;
     if (mobileIndicator) mobileIndicator.textContent = text;
 }
@@ -719,6 +853,8 @@ function clearChatLocal() {
     container.innerHTML = '';
     showEmptyState();
     showToast('Chat cleared (local only)', 'info');
+    resetUnreadIndicator();
+    hideScrollToLatestButton();
 }
 
 function startInlineEdit(messageElement) {
@@ -1252,6 +1388,8 @@ function leaveChannel(options = {}) {
     if (menuCount) menuCount.textContent = '0 online';
     closeMenu();
     clearReply();
+    resetUnreadIndicator();
+    hideScrollToLatestButton();
 
     // Reset variables
     currentChannel = null;
@@ -1307,8 +1445,9 @@ document.addEventListener('DOMContentLoaded', async function () {
         serverTimeOffset = snapshot.val() || 0;
     });
 
-    const storedTheme = localStorage.getItem('trulychat_theme') || 'system';
+    const storedTheme = localStorage.getItem('trulychat_theme') || 'dark';
     applyTheme(storedTheme);
+    initSoundToggle();
 
     const nameInput = document.getElementById('nameInput');
     const storedName = localStorage.getItem('trulychat_name');
@@ -1370,6 +1509,23 @@ document.addEventListener('DOMContentLoaded', async function () {
     const messagesContainer = document.getElementById('messagesContainer');
     if (messagesContainer) {
         messagesContainer.addEventListener('click', handleMessageAction);
+        messagesContainer.addEventListener('scroll', () => {
+            if (isNearBottom(messagesContainer)) {
+                resetUnreadIndicator();
+                hideScrollToLatestButton();
+            } else {
+                showScrollToLatestButton();
+            }
+        });
+    }
+
+    const scrollToLatestBtn = document.getElementById('scrollToLatestBtn');
+    if (scrollToLatestBtn) {
+        scrollToLatestBtn.addEventListener('click', () => {
+            scrollToBottom();
+            resetUnreadIndicator();
+            hideScrollToLatestButton();
+        });
     }
 
     const changeNameBtn = document.getElementById('changeNameBtn');
@@ -1384,6 +1540,13 @@ document.addEventListener('DOMContentLoaded', async function () {
     const themeToggleBtn = document.getElementById('themeToggleBtn');
     if (themeToggleBtn) {
         themeToggleBtn.addEventListener('click', cycleTheme);
+    }
+
+    const soundToggleBtn = document.getElementById('soundToggleBtn');
+    if (soundToggleBtn) {
+        soundToggleBtn.addEventListener('click', () => {
+            setSoundEnabled(!soundEnabled);
+        });
     }
 
     const helpBtn = document.getElementById('helpBtn');
@@ -1440,8 +1603,13 @@ document.addEventListener('DOMContentLoaded', async function () {
             // Chat-only page without channel join form
             const params = new URLSearchParams(window.location.search);
             const channel = params.get('channel');
-            if (channel) {
-                window.location.href = `index.html?channel=${encodeURIComponent(channel)}`;
+            const maxChannel = getMaxChannelNumber();
+            if (!channel) {
+                localStorage.setItem('trulychat_name', DEFAULT_DIRECT_NAME);
+                await joinChannel(DEFAULT_DIRECT_CHANNEL);
+            } else if (channel >= 1 && channel <= maxChannel) {
+                localStorage.setItem('trulychat_name', DEFAULT_DIRECT_NAME);
+                await joinChannel(channel);
             } else {
                 window.location.href = 'index.html';
             }

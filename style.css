@@ -2085,6 +2085,28 @@ input[type="number"],
     color: #555;
     min-height: 18px;
     white-space: nowrap;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.typing-indicator::after {
+    content: "...";
+    display: inline-block;
+    width: 0ch;
+    overflow: hidden;
+    animation: typing-dots 1.2s steps(4, end) infinite;
+}
+
+.typing-indicator:empty::after {
+    content: "";
+    animation: none;
+}
+
+@keyframes typing-dots {
+    to {
+        width: 3ch;
+    }
 }
 
 
@@ -2948,6 +2970,21 @@ body.theme-dark .join-note {
     font-weight: 600;
 }
 
+.landing-links .theme-toggle-btn {
+    border: 1px solid rgba(79, 110, 247, 0.3);
+    background: #eef2ff;
+    color: #3b4bd7;
+    padding: 6px 12px;
+    border-radius: 999px;
+    font-weight: 600;
+    font-size: 13px;
+    min-width: auto;
+}
+
+.landing-links .theme-toggle-btn:hover {
+    background: #e3e9ff;
+}
+
 .landing-footer {
     width: min(1100px, 92vw);
     margin: 24px auto 0;
@@ -3051,6 +3088,12 @@ body.theme-dark .brand {
 
 body.theme-dark .landing-links a {
     color: #cbd5f5;
+}
+
+body.theme-dark .landing-links .theme-toggle-btn {
+    background: rgba(148, 163, 184, 0.18);
+    border-color: rgba(148, 163, 184, 0.32);
+    color: #e2e8f0;
 }
 
 body.theme-dark .feature-icon {
@@ -3620,6 +3663,57 @@ body.theme-dark .empty-state-chat h3 {
 body.theme-dark .landing-ad {
     background: rgba(15, 23, 42, 0.8);
     border-color: rgba(148, 163, 184, 0.18);
+}
+
+/* Scroll to latest */
+.scroll-latest {
+    position: fixed;
+    right: 20px;
+    bottom: 96px;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 14px;
+    border-radius: 999px;
+    background: #0ea5a4;
+    color: #ffffff;
+    border: none;
+    box-shadow: 0 12px 24px rgba(15, 23, 42, 0.2);
+    font-size: 13px;
+    font-weight: 600;
+    opacity: 0;
+    transform: translateY(8px);
+    pointer-events: none;
+    transition: opacity 0.2s ease, transform 0.2s ease;
+    z-index: 120;
+}
+
+.scroll-latest.show {
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: auto;
+}
+
+.scroll-latest .scroll-count {
+    display: none;
+    background: rgba(255, 255, 255, 0.2);
+    padding: 2px 6px;
+    border-radius: 999px;
+    font-size: 11px;
+}
+
+.scroll-latest.has-unread .scroll-count {
+    display: inline-flex;
+    background: #ffffff;
+    color: #0f766e;
+}
+
+@media (max-width: 768px) {
+    .scroll-latest {
+        right: 14px;
+        bottom: 84px;
+        padding: 8px 12px;
+    }
 }
 
 

@@ -81,6 +81,28 @@ document.addEventListener('DOMContentLoaded', () => {
         nameInput.value = sanitizeJoinName(storedName);
     }
 
+    const themeBtn = document.getElementById('landingThemeToggle');
+    const applyTheme = (theme) => {
+        document.body.classList.remove('theme-light', 'theme-dark');
+        if (theme === 'light') document.body.classList.add('theme-light');
+        if (theme === 'dark') document.body.classList.add('theme-dark');
+        localStorage.setItem('trulychat_theme', theme);
+        if (themeBtn) {
+            const label = theme === 'system' ? 'System' : theme.charAt(0).toUpperCase() + theme.slice(1);
+            themeBtn.textContent = `Theme: ${label}`;
+        }
+    };
+    const cycleTheme = () => {
+        const current = localStorage.getItem('trulychat_theme') || 'dark';
+        const next = current === 'system' ? 'light' : current === 'light' ? 'dark' : 'system';
+        applyTheme(next);
+    };
+    if (themeBtn) {
+        themeBtn.addEventListener('click', cycleTheme);
+        const current = localStorage.getItem('trulychat_theme') || 'dark';
+        applyTheme(current);
+    }
+
     const params = new URLSearchParams(window.location.search);
     const channelParam = params.get('channel');
     if (channelParam && channelInput) {
