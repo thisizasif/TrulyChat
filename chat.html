@@ -11,6 +11,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Sora:wght@600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="chat.css">
+    <link rel="icon" href="trulychat.png">
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
     </head>
@@ -101,6 +102,7 @@
                         <button id="cancelReplyBtn" class="reply-cancel" type="button" aria-label="Cancel reply">&times;</button>
                     </div>
                     <div id="commandSuggestions" class="command-suggestions" aria-hidden="true"></div>
+                    <div id="mentionList" class="mention-list"></div>
                     <div class="input-row">
                         <input type="text" id="messageInput" placeholder="Type your message..." onkeypress="handleKeyPress(event)">
                         <button onclick="sendMessage()" id="sendBtn">Send</button>

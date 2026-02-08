@@ -20,19 +20,22 @@ let typingLastSent = 0;
 let explicitLeave = false;
 let currentOnlineIds = new Set();
 let onlineHeartbeatTimer = null;
+let isReloading = false;
+let messagesUserRef = null;
 let connectedListener = null;
+let isWindowFocused = true;
+let onlineUsersCache = [];
+const SESSION_PREFIX = 'trulychat_session_';
 // Defaults when opening chat.html directly without a channel
 const DEFAULT_DIRECT_CHANNEL = '111';
 const DEFAULT_DIRECT_NAME = 'iLOveSky';
 let unreadCount = 0;
 let soundEnabled = false;
-let soundReady = false;
 let audioContext = null;
 const SOUND_TOGGLE_KEY = 'trulychat_sound_enabled';
 const LAST_SESSION_KEY = 'trulychat_last_session';
 const LAST_SESSION_TTL_MS = 6 * 60 * 60 * 1000;
 let busiestChannelListener = null;
-const SESSION_PREFIX = 'trulychat_session_';
 const COMMANDS = [
     { cmd: '/invite', label: 'Invite others' },
     { cmd: '/clear', label: 'Clear chat locally' },
@@ -53,14 +56,6 @@ const REACTIONS = {
 // Generate random user ID and name
 function generateUserId() {
     return 'user_' + Math.random().toString(36).substr(2, 9);
-}
-
-function generateRandomName() {
-    const adjectives = ['Ashu', 'Asba', 'Kashmir', 'Akii', 'Eager', 'Gentle', 'Happy', 'Jolly', 'Kind', 'Lucky'];
-    const nouns = ['Tiger', 'Eagle', 'Dolphin', 'Wolf', 'Fox', 'Bear', 'Lion', 'Owl', 'Hawk', 'Shark'];
-    const adj = adjectives[Math.floor(Math.random() * adjectives.length)];
-    const noun = nouns[Math.floor(Math.random() * nouns.length)];
-    return adj + noun + Math.floor(Math.random() * 100);
 }
 
 function getLastSession() {
@@ -89,12 +84,6 @@ function getServerTime() {
     return Date.now() + serverTimeOffset;
 }
 
-function normalizeTimestamp(value) {
-    const num = Number(value);
-    if (Number.isFinite(num) && num > 0) return num;
-    return getServerTime();
-}
-
 function getSessionKey(channel, name) {
     const safeChannel = String(channel || '').trim();
     const safeName = sanitizeName(name || '');
@@ -114,15 +103,15 @@ function loadSession(channel, name) {
     }
 }
 
-function saveSession(channel, name, joinTs) {
+function saveSession(channel, name, joinTs, id) {
     const key = getSessionKey(channel, name);
     if (!key) return;
     const payload = {
         channel: String(channel),
         name: sanitizeName(name),
         joinTimestamp: Number(joinTs) || getServerTime(),
-        updatedAt: Date.now(),
-        userId: userId || null
+        userId: id || null,
+        updatedAt: Date.now()
     };
     sessionStorage.setItem(key, JSON.stringify(payload));
 }
@@ -131,6 +120,12 @@ function clearSession(channel, name) {
     const key = getSessionKey(channel, name);
     if (!key) return;
     sessionStorage.removeItem(key);
+}
+
+function normalizeTimestamp(value) {
+    const num = Number(value);
+    if (Number.isFinite(num) && num > 0) return num;
+    return getServerTime();
 }
 
 function getMaxChannelNumber() {
@@ -287,12 +282,10 @@ function setSoundEnabled(enabled) {
     }
     if (soundEnabled) {
         const ctx = ensureAudioContext();
-        soundReady = true;
         if (ctx && ctx.state === 'suspended') {
             ctx.resume().catch(() => {});
         }
     } else {
-        soundReady = false;
         if (audioContext && audioContext.state === 'running') {
             audioContext.suspend().catch(() => {});
         }
@@ -393,12 +386,12 @@ async function joinChannel(channelFromUrl = null) {
     currentUserKey = nameToKey(providedName);
     joinTimestamp = existingSession && existingSession.joinTimestamp
         ? existingSession.joinTimestamp
-        : getServerTime(); // Set join time using server offset
+        : getServerTime(); // Fresh unless reloading
     lastOnlineCount = 0;
     explicitLeave = false;
     clearReply();
     setLastSession({ channel, name: userName, active: true });
-    saveSession(channel, userName, joinTimestamp);
+    saveSession(channel, userName, joinTimestamp, userId);
 
     // Switch to chat screen
     const channelScreenEl = document.getElementById('channelScreen');
@@ -477,6 +470,10 @@ function setupChannelListeners() {
 
     // Remove user when they disconnect
     userRef.onDisconnect().remove();
+    if (currentUserKey) {
+        messagesUserRef = database.ref(`channels/${currentChannel}/messages/${currentUserKey}`);
+        messagesUserRef.onDisconnect().remove();
+    }
     if (connectedListener) {
         database.ref('.info/connected').off('value', connectedListener);
     }
@@ -534,6 +531,48 @@ function removeChannelListeners() {
         clearInterval(onlineHeartbeatTimer);
         onlineHeartbeatTimer = null;
     }
+    if (messagesUserRef) {
+        messagesUserRef.onDisconnect().cancel();
+        messagesUserRef = null;
+    }
+}
+
+function cleanupUserData(removeMessagesAll = false) {
+    if (!currentChannel || !userId) return;
+    database.ref(`channels/${currentChannel}/online/${userId}`).remove();
+    if (currentUserKey) {
+        database.ref(`channels/${currentChannel}/messages/${currentUserKey}`).remove();
+    }
+    if (typingRef) {
+        typingRef.remove();
+    }
+    if (removeMessagesAll) {
+        database.ref(`channels/${currentChannel}/messagesAll`)
+            .orderByChild('userId')
+            .equalTo(userId)
+            .once('value')
+            .then((snapshot) => {
+                const updates = {};
+                snapshot.forEach((child) => {
+                    updates[child.key] = null;
+                });
+                if (Object.keys(updates).length > 0) {
+                    database.ref(`channels/${currentChannel}/messagesAll`).update(updates);
+                }
+            })
+            .catch(() => {});
+    }
+}
+
+function cleanupChannelIfEmpty(channel) {
+    if (!channel) return;
+    const onlineRef = database.ref(`channels/${channel}/online`);
+    onlineRef.once('value').then((snapshot) => {
+        if (snapshot.numChildren() === 0) {
+            database.ref(`channels/${channel}`).remove();
+            database.ref(`channelsMeta/${channel}`).remove();
+        }
+    }).catch(() => {});
 }
 
 // Send a message
@@ -725,7 +764,9 @@ function displayMessage(message, messageId) {
         }
     }
     if (!isOwnMessage && !isSystemMessage) {
-        playNotificationSound();
+        if (!isWindowFocused) {
+            playNotificationSound();
+        }
     }
     filterMessages();
 }
@@ -819,12 +860,41 @@ function filterMessages() {
     if (!searchInput) return;
     const query = searchInput.value.trim().toLowerCase();
     const messages = document.querySelectorAll('#messagesContainer .message');
+    const escapeRegExp = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const highlightMatch = (text, needle) => {
+        if (!needle) return escapeHTML(text);
+        const regex = new RegExp(escapeRegExp(needle), 'gi');
+        return escapeHTML(text).replace(regex, (match) => `<mark class="search-highlight">${match}</mark>`);
+    };
     messages.forEach((message) => {
         const text = message.dataset.text || '';
         const sender = message.dataset.sender || '';
         const matches = !query || text.includes(query) || sender.includes(query);
         message.classList.toggle('hidden', !matches);
+
+        const textEl = message.querySelector('.message-text');
+        if (textEl) {
+            if (textEl.querySelector('em')) {
+                if (!query) {
+                    textEl.innerHTML = '<em>(deleted)</em>';
+                }
+            } else {
+                const rawText = message.dataset.rawText || textEl.textContent || '';
+                textEl.innerHTML = highlightMatch(rawText, query);
+            }
+        }
+
+        const senderEl = message.querySelector('.message-sender');
+        if (senderEl) {
+            const rawSender = message.dataset.senderName || senderEl.textContent || '';
+            senderEl.innerHTML = highlightMatch(rawSender, query);
+        }
     });
+}
+
+function mentionMatch(search, name) {
+    if (!search) return true;
+    return name.toLowerCase().startsWith(search.toLowerCase());
 }
 
 function updateMessage(message, messageId) {
@@ -989,6 +1059,7 @@ function updateOnlineUsersList(snapshot) {
             menuContainer.innerHTML = '<div class="empty-online">No one is online</div>';
             menuContainer.style.display = 'grid';
         }
+        onlineUsersCache = [];
         return;
     }
 
@@ -1024,6 +1095,7 @@ function updateOnlineUsersList(snapshot) {
         menuContainer.innerHTML = menuHtml;
         menuContainer.style.display = 'grid';
     }
+    onlineUsersCache = users;
 }
 
 function updateTypingIndicator(snapshot) {
@@ -1410,7 +1482,7 @@ function openNameModal() {
         if (currentChannel) {
             setLastSession({ channel: currentChannel, name: next, active: true });
             clearSession(currentChannel, oldName);
-            saveSession(currentChannel, next, joinTimestamp || getServerTime());
+            saveSession(currentChannel, next, joinTimestamp || getServerTime(), userId);
         }
         showToast('Name updated', 'success');
         close();
@@ -1492,6 +1564,7 @@ function openMenu() {
     panel.setAttribute('aria-hidden', 'false');
     toggle.setAttribute('aria-expanded', 'true');
 }
+
 
 function closeMenu() {
     const panel = document.getElementById('menuPanel');
@@ -1708,7 +1781,7 @@ function shareChannel() {
         <div style="background: white; padding: 25px; border-radius: 12px; max-width: 520px; width: 92%;">
             <h3 style="margin: 0 0 15px 0; color: #333;">Share Channel ${currentChannel}</h3>
             <p style="margin: 0 0 15px 0; color: #666;">Send this link to invite others:</p>
-            <div style="background: #f5f5f5; padding: 12px; border-radius: 6px; margin-bottom: 20px; word-break: break-all; font-family: monospace; font-size: 14px;">
+            <div style="background: #f5f5f5; padding: 12px; border-radius: 6px; margin-bottom: 20px; word-break: break-all; font-family: monospace; font-size: 14px; color: #111;">
                 ${channelLink}
             </div>
             <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 12px;">
@@ -1854,25 +1927,8 @@ function leaveChannel(options = {}) {
     const { redirect = true } = options;
     explicitLeave = true;
     if (currentChannel && userId) {
-        // Remove user from online list
-        database.ref(`channels/${currentChannel}/online/${userId}`).remove();
-        if (currentUserKey) {
-            database.ref(`channels/${currentChannel}/messages/${currentUserKey}`).remove();
-        }
-        database.ref(`channels/${currentChannel}/messagesAll`)
-            .orderByChild('userId')
-            .equalTo(userId)
-            .once('value')
-            .then((snapshot) => {
-                const updates = {};
-                snapshot.forEach((child) => {
-                    updates[child.key] = null;
-                });
-                if (Object.keys(updates).length > 0) {
-                    database.ref(`channels/${currentChannel}/messagesAll`).update(updates);
-                }
-            })
-            .catch(() => {});
+        cleanupUserData(true);
+        cleanupChannelIfEmpty(currentChannel);
 
         // Add leave message
         addSystemMessage(`You left Channel ${currentChannel}`);
@@ -1983,6 +2039,12 @@ function cleanupOldMessages() {
 
 // Initialize
 document.addEventListener('DOMContentLoaded', async function () {
+    isWindowFocused = !document.hidden;
+    document.addEventListener('visibilitychange', () => {
+        isWindowFocused = !document.hidden;
+    });
+    const navEntry = performance.getEntriesByType('navigation')[0];
+    isReloading = navEntry ? navEntry.type === 'reload' : false;
     database.ref('.info/serverTimeOffset').on('value', (snapshot) => {
         serverTimeOffset = snapshot.val() || 0;
     });
@@ -2044,6 +2106,24 @@ document.addEventListener('DOMContentLoaded', async function () {
             } else {
                 hideCommandSuggestions();
             }
+
+            const atIndex = value.lastIndexOf('@');
+            const mentionList = document.getElementById('mentionList');
+            if (mentionList && atIndex >= 0) {
+                const search = value.slice(atIndex + 1);
+                const names = onlineUsersCache.map((user) => user.name).filter(Boolean);
+                const unique = Array.from(new Set(names)).filter((name) => mentionMatch(search, name));
+                if (unique.length) {
+                    mentionList.innerHTML = unique.map((name) => `<div class="mention-item">${escapeHTML(name)}</div>`).join('');
+                    mentionList.classList.add('show');
+                } else {
+                    mentionList.classList.remove('show');
+                    mentionList.innerHTML = '';
+                }
+            } else if (mentionList) {
+                mentionList.classList.remove('show');
+                mentionList.innerHTML = '';
+            }
         });
 
         messageInput.addEventListener('blur', () => {
@@ -2051,6 +2131,7 @@ document.addEventListener('DOMContentLoaded', async function () {
             setTimeout(hideCommandSuggestions, 120);
         });
     }
+
 
     const cancelReplyBtn = document.getElementById('cancelReplyBtn');
     if (cancelReplyBtn) {
@@ -2184,19 +2265,39 @@ document.addEventListener('DOMContentLoaded', async function () {
         });
     }
 
+    const mentionList = document.getElementById('mentionList');
+    if (mentionList && messageInput) {
+        mentionList.addEventListener('click', (event) => {
+            const item = event.target.closest('.mention-item');
+            if (!item) return;
+            const name = item.textContent.trim();
+            const value = messageInput.value;
+            const atIndex = value.lastIndexOf('@');
+            if (atIndex >= 0) {
+                messageInput.value = value.slice(0, atIndex + 1) + name + ' ';
+                mentionList.classList.remove('show');
+                mentionList.innerHTML = '';
+                messageInput.focus();
+            }
+        });
+    }
+
     setupLongPress();
 
     window.addEventListener('beforeunload', () => {
         if (!currentChannel || !userName) return;
         if (explicitLeave) return;
+        if (isReloading) {
+            saveSession(currentChannel, userName, joinTimestamp || getServerTime(), userId);
+            return;
+        }
         const lastSession = getLastSession();
         if (lastSession && lastSession.updatedAt && Date.now() - lastSession.updatedAt > LAST_SESSION_TTL_MS) {
             return;
         }
         setLastSession({ channel: currentChannel, name: userName, active: true });
-        if (userRef) {
-            userRef.remove();
-        }
+        cleanupUserData(true);
+        cleanupChannelIfEmpty(currentChannel);
     });
 
     // Check if URL has channel parameter
