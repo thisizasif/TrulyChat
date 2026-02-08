@@ -17,6 +17,19 @@ function showJoinError(message) {
     error.style.display = message ? 'block' : 'none';
 }
 
+const LAST_SESSION_KEY = 'trulychat_last_session';
+const LAST_SESSION_TTL_MS = 6 * 60 * 60 * 1000;
+
+function getLastSession() {
+    const raw = localStorage.getItem(LAST_SESSION_KEY);
+    if (!raw) return null;
+    try {
+        return JSON.parse(raw);
+    } catch (error) {
+        return null;
+    }
+}
+
 function startChat() {
     const nameInput = document.getElementById('nameInput');
     const channelInput = document.getElementById('channelInput');
@@ -46,6 +59,27 @@ function startChat() {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
+    const params = new URLSearchParams(window.location.search);
+    const errorParam = params.get('error');
+    const channelParam = params.get('channel');
+    const nameParam = params.get('name');
+
+    if (!errorParam) {
+        const lastSession = getLastSession();
+        const maxChannel = getMaxChannelNumber();
+        if (lastSession && lastSession.active) {
+            const channelNumber = parseInt(lastSession.channel, 10);
+            const isFresh = !lastSession.updatedAt || (Date.now() - lastSession.updatedAt) <= LAST_SESSION_TTL_MS;
+            if (isFresh && channelNumber >= 1 && channelNumber <= maxChannel && lastSession.name) {
+                const rejoinParams = new URLSearchParams();
+                rejoinParams.set('channel', String(channelNumber));
+                rejoinParams.set('name', String(lastSession.name));
+                window.location.href = `chat.html?${rejoinParams.toString()}`;
+                return;
+            }
+        }
+    }
+
     const joinBtn = document.getElementById('joinBtn');
     if (joinBtn) {
         joinBtn.addEventListener('click', startChat);
@@ -103,9 +137,13 @@ document.addEventListener('DOMContentLoaded', () => {
         applyTheme(current);
     }
 
-    const params = new URLSearchParams(window.location.search);
-    const channelParam = params.get('channel');
     if (channelParam && channelInput) {
         channelInput.value = channelParam;
+    }
+    if (nameParam && nameInput) {
+        nameInput.value = sanitizeJoinName(nameParam);
+    }
+    if (errorParam === 'name_taken') {
+        showJoinError('That name is already in use in this channel. Please choose another.');
     }
 });

@@ -6,15 +6,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="robots" content="noindex, nofollow">
     <link rel="canonical" href="https://thisizasif.github.io/TrulyChat/chat.html">
-    <title>Channel Chat - Firebase</title>
+    <title>TrulyChat</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Sora:wght@600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="chat.css">
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
     </head>
-<body class="chat-body">
+<body class="chat-body theme-dark">
     <div class="container">
         <!-- Chat Screen -->
         <div id="chatScreen" class="screen" style="display: none;">
@@ -40,6 +40,7 @@
                         <div id="typingIndicatorMobile" class="typing-indicator typing-inline"></div>
                     </div>
                     <div class="chat-actions">
+                        <div class="online-inline">Online: <span id="onlineCountInline">0</span></div>
                         <button id="changeNameBtnDesktop" type="button">Change name</button>
                     </div>
                     <div id="typingIndicator" class="typing-indicator"></div>
@@ -56,6 +57,8 @@
                     <div class="menu-section">
                         <div class="menu-label">Actions</div>
                         <button onclick="shareChannel()" class="menu-item">Invite</button>
+                        <button id="joinBusiestBtn" class="menu-item" type="button">Join busiest channel</button>
+                        <div id="busiestChannelInfo" class="menu-online">Finding busiest channel...</div>
                         <button id="changeNameBtn" class="menu-item" type="button">Change name</button>
                         <button id="clearChatBtn" class="menu-item" type="button">Clear chat</button>
                     </div>
@@ -97,6 +100,7 @@
                         <div id="replyText" class="reply-text"></div>
                         <button id="cancelReplyBtn" class="reply-cancel" type="button" aria-label="Cancel reply">&times;</button>
                     </div>
+                    <div id="commandSuggestions" class="command-suggestions" aria-hidden="true"></div>
                     <div class="input-row">
                         <input type="text" id="messageInput" placeholder="Type your message..." onkeypress="handleKeyPress(event)">
                         <button onclick="sendMessage()" id="sendBtn">Send</button>

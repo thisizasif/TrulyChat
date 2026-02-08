@@ -17,6 +17,7 @@ let currentUserKey = null;
 let currentTheme = 'system';
 let pendingReply = null;
 let typingLastSent = 0;
+let explicitLeave = false;
 // Defaults when opening chat.html directly without a channel
 const DEFAULT_DIRECT_CHANNEL = '111';
 const DEFAULT_DIRECT_NAME = 'iLOveSky';
@@ -25,6 +26,19 @@ let soundEnabled = false;
 let soundReady = false;
 let audioContext = null;
 const SOUND_TOGGLE_KEY = 'trulychat_sound_enabled';
+const LAST_SESSION_KEY = 'trulychat_last_session';
+const LAST_SESSION_TTL_MS = 6 * 60 * 60 * 1000;
+let busiestChannelListener = null;
+const COMMANDS = [
+    { cmd: '/invite', label: 'Invite others' },
+    { cmd: '/clear', label: 'Clear chat locally' },
+    { cmd: '/leave', label: 'Leave channel' },
+    { cmd: '/next', label: 'Next random channel' },
+    { cmd: '/theme dark', label: 'Theme dark' },
+    { cmd: '/theme light', label: 'Theme light' },
+    { cmd: '/theme system', label: 'Theme system' },
+    { cmd: '/help', label: 'Show commands' }
+];
 
 const REACTIONS = {
     like: '&#x1F44D;',
@@ -43,6 +57,28 @@ function generateRandomName() {
     const adj = adjectives[Math.floor(Math.random() * adjectives.length)];
     const noun = nouns[Math.floor(Math.random() * nouns.length)];
     return adj + noun + Math.floor(Math.random() * 100);
+}
+
+function getLastSession() {
+    const raw = localStorage.getItem(LAST_SESSION_KEY);
+    if (!raw) return null;
+    try {
+        return JSON.parse(raw);
+    } catch (error) {
+        return null;
+    }
+}
+
+function setLastSession(data) {
+    if (!data) return;
+    const payload = {
+        channel: String(data.channel || '').trim(),
+        name: sanitizeName(data.name || ''),
+        active: Boolean(data.active),
+        updatedAt: Date.now()
+    };
+    if (!payload.channel || !payload.name) return;
+    localStorage.setItem(LAST_SESSION_KEY, JSON.stringify(payload));
 }
 
 function getServerTime() {
@@ -103,6 +139,18 @@ function getInitials(name) {
     const first = parts[0][0] || '';
     const last = parts.length > 1 ? parts[parts.length - 1][0] : '';
     return (first + last).toUpperCase();
+}
+
+function getAvatarColor(seed) {
+    const palette = ['#0ea5a4', '#2563eb', '#7c3aed', '#f97316', '#ef4444', '#22c55e', '#eab308', '#ec4899'];
+    const value = String(seed || '').toLowerCase();
+    let hash = 0;
+    for (let i = 0; i < value.length; i += 1) {
+        hash = (hash << 5) - hash + value.charCodeAt(i);
+        hash |= 0;
+    }
+    const index = Math.abs(hash) % palette.length;
+    return palette[index];
 }
 
 function isNearBottom(container, threshold = 100) {
@@ -209,6 +257,22 @@ function initSoundToggle() {
     }
 }
 
+async function isNameTaken(channel, name, excludeUserId = null) {
+    if (!channel || !name) return false;
+    const snapshot = await database.ref(`channels/${channel}/online`).once('value');
+    let taken = false;
+    snapshot.forEach((child) => {
+        if (excludeUserId && child.key === excludeUserId) return;
+        const data = child.val();
+        if (!data || !data.name) return;
+        const existing = sanitizeName(data.name).toLowerCase();
+        if (existing === sanitizeName(name).toLowerCase()) {
+            taken = true;
+        }
+    });
+    return taken;
+}
+
 // Join a channel
 async function joinChannel(channelFromUrl = null) {
     let channel;
@@ -244,6 +308,21 @@ async function joinChannel(channelFromUrl = null) {
 
     localStorage.setItem('trulychat_name', providedName);
 
+    const nameTaken = await isNameTaken(channel, providedName);
+    if (nameTaken) {
+        showToast('Name already in use. Choose another.', 'warning');
+        if (nameInput) {
+            nameInput.focus();
+            return;
+        }
+        const params = new URLSearchParams();
+        params.set('error', 'name_taken');
+        params.set('channel', String(channel));
+        params.set('name', providedName);
+        window.location.href = `index.html?${params.toString()}`;
+        return;
+    }
+
     await ensureServerTime();
 
     currentChannel = channel;
@@ -252,7 +331,9 @@ async function joinChannel(channelFromUrl = null) {
     currentUserKey = nameToKey(providedName);
     joinTimestamp = getServerTime(); // Set join time using server offset
     lastOnlineCount = 0;
+    explicitLeave = false;
     clearReply();
+    setLastSession({ channel, name: userName, active: true });
 
     // Switch to chat screen
     const channelScreenEl = document.getElementById('channelScreen');
@@ -367,6 +448,16 @@ function sendMessage() {
 
     if (!messageText) return;
 
+    if (messageText.startsWith('/')) {
+        const handled = handleSlashCommand(messageText);
+        if (handled) {
+            messageInput.value = '';
+            messageInput.focus();
+            setTyping(false);
+            return;
+        }
+    }
+
     const message = {
         userId: userId,
         userName: userName,
@@ -430,7 +521,8 @@ function displayMessage(message, messageId) {
     } else {
         messageElement.className = 'message ' + (message.userId === userId ? 'own-message' : 'other-message');
 
-        const avatar = `<div class="message-avatar">${escapeHTML(getInitials(message.userName || ''))}</div>`;
+        const avatarColor = getAvatarColor(message.userId || message.userName || '');
+        const avatar = `<div class="message-avatar" style="background: ${avatarColor};">${escapeHTML(getInitials(message.userName || ''))}</div>`;
         if (message.userId === userId) {
             messageElement.innerHTML = `
                 <div class="message-row own-row">
@@ -535,6 +627,90 @@ function displayMessage(message, messageId) {
     filterMessages();
 }
 
+function showCommandSuggestions(matches) {
+    const container = document.getElementById('commandSuggestions');
+    if (!container) return;
+    if (!matches.length) {
+        container.classList.remove('show');
+        container.setAttribute('aria-hidden', 'true');
+        container.innerHTML = '';
+        return;
+    }
+    container.innerHTML = matches.map((item, index) => `
+        <div class="command-item${index === 0 ? ' active' : ''}" data-command="${item.cmd}">
+            <strong>${item.cmd}</strong>
+            <span>${item.label}</span>
+        </div>
+    `).join('');
+    container.classList.add('show');
+    container.setAttribute('aria-hidden', 'false');
+}
+
+function hideCommandSuggestions() {
+    const container = document.getElementById('commandSuggestions');
+    if (!container) return;
+    container.classList.remove('show');
+    container.setAttribute('aria-hidden', 'true');
+    container.innerHTML = '';
+}
+
+function filterCommands(query) {
+    const needle = query.toLowerCase();
+    return COMMANDS.filter((item) => item.cmd.toLowerCase().startsWith(needle));
+}
+
+function insertCommand(command) {
+    const input = document.getElementById('messageInput');
+    if (!input) return;
+    input.value = command + ' ';
+    input.focus();
+    hideCommandSuggestions();
+}
+
+function handleSlashCommand(rawText) {
+    const parts = rawText.trim().split(/\s+/);
+    const command = parts[0].toLowerCase();
+    const arg = parts.slice(1).join(' ');
+
+    switch (command) {
+        case '/invite':
+            shareChannel();
+            showToast('Invite link opened', 'success');
+            return true;
+        case '/clear':
+            clearChatLocal();
+            showToast('Chat cleared locally', 'info');
+            return true;
+        case '/leave':
+            leaveChannel();
+            return true;
+        case '/next':
+            nextChannel();
+            return true;
+        case '/theme': {
+            const next = arg.toLowerCase();
+            if (!next) {
+                cycleTheme();
+                showToast('Theme updated', 'success');
+                return true;
+            }
+            if (!['dark', 'light', 'system'].includes(next)) {
+                showToast('Theme options: dark, light, system', 'warning');
+                return true;
+            }
+            applyTheme(next);
+            showToast(`Theme set to ${next}`, 'success');
+            return true;
+        }
+        case '/help':
+        case '/?':
+            window.open('help.html', '_blank');
+            return true;
+        default:
+            return false;
+    }
+}
+
 function filterMessages() {
     const searchInput = document.getElementById('searchInput');
     if (!searchInput) return;
@@ -606,7 +782,12 @@ function showEmptyState() {
     empty.innerHTML = `
         <h3>No messages yet</h3>
         <p>Start the conversation or invite others to this channel.</p>
+        <button type="button" class="empty-state-btn">Invite others</button>
     `;
+    const inviteBtn = empty.querySelector('.empty-state-btn');
+    if (inviteBtn) {
+        inviteBtn.addEventListener('click', shareChannel);
+    }
     container.appendChild(empty);
 }
 
@@ -615,6 +796,12 @@ function removeEmptyState() {
     if (!container) return;
     const empty = container.querySelector('.empty-state-chat');
     if (empty) empty.remove();
+}
+
+function hasUserMessages() {
+    const container = document.getElementById('messagesContainer');
+    if (!container) return false;
+    return Boolean(container.querySelector('.message:not(.system-message)'));
 }
 
 // Add system message
@@ -633,9 +820,22 @@ function updateOnlineCount(count) {
     if (countEl) {
         countEl.textContent = count;
     }
+    const inlineCount = document.getElementById('onlineCountInline');
+    if (inlineCount) {
+        inlineCount.textContent = count;
+    }
     const menuCount = document.getElementById('menuOnlineCount');
     if (menuCount) {
         menuCount.textContent = `${count} online`;
+    }
+    if (currentChannel) {
+        database.ref(`channelsMeta/${currentChannel}`).update({
+            onlineCount: count,
+            updatedAt: Date.now()
+        }).catch(() => {});
+    }
+    if (count <= 1 && !hasUserMessages()) {
+        showEmptyState();
     }
 }
 
@@ -1038,7 +1238,7 @@ function openNameModal() {
         if (event.target === modal) close();
     });
     modal.querySelector('.cancel').addEventListener('click', close);
-    modal.querySelector('.save').addEventListener('click', () => {
+    modal.querySelector('.save').addEventListener('click', async () => {
         const next = sanitizeName(input.value);
         if (!next) {
             showToast('Enter a valid name', 'warning');
@@ -1048,6 +1248,13 @@ function openNameModal() {
             showToast('Name unchanged', 'info');
             close();
             return;
+        }
+        if (currentChannel) {
+            const taken = await isNameTaken(currentChannel, next, userId);
+            if (taken) {
+                showToast('Name already in use. Choose another.', 'warning');
+                return;
+            }
         }
 
         userName = next;
@@ -1060,6 +1267,9 @@ function openNameModal() {
 
         if (userRef) {
             userRef.update({ name: next, timestamp: Date.now() });
+        }
+        if (currentChannel) {
+            setLastSession({ channel: currentChannel, name: next, active: true });
         }
         showToast('Name updated', 'success');
         close();
@@ -1083,6 +1293,7 @@ function openMenu() {
     const backdrop = document.getElementById('menuBackdrop');
     const toggle = document.getElementById('menuToggle');
     if (!panel || !backdrop || !toggle) return;
+    refreshBusiestChannelButton();
     panel.classList.add('open');
     backdrop.classList.add('open');
     panel.setAttribute('aria-hidden', 'false');
@@ -1098,6 +1309,92 @@ function closeMenu() {
     backdrop.classList.remove('open');
     panel.setAttribute('aria-hidden', 'true');
     toggle.setAttribute('aria-expanded', 'false');
+}
+
+function stopBusiestChannelListener() {
+    if (busiestChannelListener) {
+        database.ref('channelsMeta').off('value', busiestChannelListener);
+        busiestChannelListener = null;
+    }
+}
+
+function startBusiestChannelListener() {
+    if (busiestChannelListener) return;
+    busiestChannelListener = () => {
+        refreshBusiestChannelButton();
+    };
+    database.ref('channelsMeta').on('value', busiestChannelListener);
+}
+
+async function getBusiestChannel() {
+    const metaSnap = await database.ref('channelsMeta').once('value');
+    let busiest = null;
+    let busiestCount = 0;
+    const now = Date.now();
+    const staleLimit = 10 * 60 * 1000;
+    metaSnap.forEach((channelSnap) => {
+        const key = String(channelSnap.key || '').trim();
+        const channelNumber = parseInt(key, 10);
+        if (!Number.isFinite(channelNumber)) return;
+        const data = channelSnap.val() || {};
+        const onlineCount = Number(data.onlineCount || 0);
+        const updatedAt = Number(data.updatedAt || 0);
+        if (!onlineCount || now - updatedAt > staleLimit) return;
+        if (onlineCount > busiestCount) {
+            busiestCount = onlineCount;
+            busiest = channelNumber;
+        }
+    });
+    return busiest !== null ? { channel: busiest, count: busiestCount } : null;
+}
+
+async function refreshBusiestChannelButton() {
+    const button = document.getElementById('joinBusiestBtn');
+    const info = document.getElementById('busiestChannelInfo');
+    if (!button || !info) return;
+    button.disabled = true;
+    if (navigator.onLine === false) {
+        info.textContent = 'You are offline.';
+        button.textContent = 'Join busiest channel';
+        return;
+    }
+    info.textContent = 'Finding busiest channel...';
+    try {
+        const result = await getBusiestChannel();
+        if (!result || result.count < 1) {
+            button.disabled = true;
+            info.textContent = 'No active channels yet.';
+            button.textContent = 'Join busiest channel';
+            return;
+        }
+        const maxChannel = getMaxChannelNumber();
+        if (result.channel < 1 || result.channel > maxChannel) {
+            button.disabled = true;
+            info.textContent = 'Busiest channel is out of range.';
+            button.textContent = 'Join busiest channel';
+            return;
+        }
+        button.disabled = false;
+        button.textContent = `Join channel ${result.channel}`;
+        info.textContent = `${result.count} online`;
+        button.dataset.channel = String(result.channel);
+    } catch (error) {
+        button.disabled = true;
+        info.textContent = 'Unable to load channels.';
+        button.textContent = 'Join busiest channel';
+    }
+}
+
+async function joinBusiestChannel() {
+    const button = document.getElementById('joinBusiestBtn');
+    const target = button ? button.dataset.channel : null;
+    if (!target) return;
+    if (currentChannel && String(currentChannel) === String(target)) {
+        showToast('You are already in the busiest channel.', 'info');
+        return;
+    }
+    leaveChannel({ redirect: false });
+    await joinChannel(String(target));
 }
 
 function setupLongPress() {
@@ -1196,6 +1493,8 @@ function shareChannel() {
     }
 
     const channelLink = `${window.location.origin}${window.location.pathname}?channel=${currentChannel}`;
+    const encodedLink = encodeURIComponent(channelLink);
+    const shareText = encodeURIComponent(`Join my TrulyChat channel ${currentChannel}: ${channelLink}`);
 
     // Create modal for sharing
     const modal = document.createElement('div');
@@ -1213,20 +1512,30 @@ function shareChannel() {
     `;
 
     modal.innerHTML = `
-        <div style="background: white; padding: 25px; border-radius: 10px; max-width: 500px; width: 90%;">
+        <div style="background: white; padding: 25px; border-radius: 12px; max-width: 520px; width: 92%;">
             <h3 style="margin: 0 0 15px 0; color: #333;">Share Channel ${currentChannel}</h3>
             <p style="margin: 0 0 15px 0; color: #666;">Send this link to invite others:</p>
             <div style="background: #f5f5f5; padding: 12px; border-radius: 6px; margin-bottom: 20px; word-break: break-all; font-family: monospace; font-size: 14px;">
                 ${channelLink}
             </div>
+            <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 12px;">
+                <button id="waShareBtn"
+                        style="flex: 1 1 160px; padding: 10px; background: #25D366; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">
+                    WhatsApp
+                </button>
+                <button id="tgShareBtn"
+                        style="flex: 1 1 160px; padding: 10px; background: #229ED9; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">
+                    Telegram
+                </button>
+                <button id="copyBtn"
+                        style="flex: 1 1 160px; padding: 10px; background: #4CAF50; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">
+                    Copy Link
+                </button>
+            </div>
             <div style="display: flex; gap: 10px;">
                 <button onclick="this.parentElement.parentElement.parentElement.remove()" 
                         style="flex: 1; padding: 10px; background: #666; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: 600;">
                     Close
-                </button>
-                <button id="copyBtn" 
-                        style="flex: 1; padding: 10px; background: #4CAF50; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: 600;">
-                    Copy Link
                 </button>
             </div>
         </div>
@@ -1238,6 +1547,20 @@ function shareChannel() {
     document.getElementById('copyBtn').onclick = function () {
         copyToClipboard(channelLink, this);
     };
+
+    const waBtn = document.getElementById('waShareBtn');
+    if (waBtn) {
+        waBtn.onclick = function () {
+            window.open(`https://wa.me/?text=${shareText}`, '_blank', 'noopener,noreferrer');
+        };
+    }
+
+    const tgBtn = document.getElementById('tgShareBtn');
+    if (tgBtn) {
+        tgBtn.onclick = function () {
+            window.open(`https://t.me/share/url?url=${encodedLink}&text=${shareText}`, '_blank', 'noopener,noreferrer');
+        };
+    }
 
     // Close on background click
     modal.addEventListener('click', function (e) {
@@ -1336,6 +1659,7 @@ async function checkURLForChannel() {
 // Leave channel
 function leaveChannel(options = {}) {
     const { redirect = true } = options;
+    explicitLeave = true;
     if (currentChannel && userId) {
         // Remove user from online list
         database.ref(`channels/${currentChannel}/online/${userId}`).remove();
@@ -1360,6 +1684,11 @@ function leaveChannel(options = {}) {
     const url = new URL(window.location);
     url.searchParams.delete('channel');
     window.history.pushState({}, '', url);
+
+    const lastSession = getLastSession();
+    if (lastSession && lastSession.channel) {
+        setLastSession({ channel: lastSession.channel, name: lastSession.name || '', active: false });
+    }
 
     // Return to channel screen (or redirect to join page if not present)
     const channelScreen = document.getElementById('channelScreen');
@@ -1494,10 +1823,19 @@ document.addEventListener('DOMContentLoaded', async function () {
                 clearTimeout(typingTimeout);
             }
             typingTimeout = setTimeout(() => setTyping(false), 1500);
+
+            const value = messageInput.value.trimStart();
+            if (value.startsWith('/')) {
+                const matches = filterCommands(value);
+                showCommandSuggestions(matches);
+            } else {
+                hideCommandSuggestions();
+            }
         });
 
         messageInput.addEventListener('blur', () => {
             setTyping(false);
+            setTimeout(hideCommandSuggestions, 120);
         });
     }
 
@@ -1569,23 +1907,74 @@ document.addEventListener('DOMContentLoaded', async function () {
     const menuBackdrop = document.getElementById('menuBackdrop');
     const menuPanel = document.getElementById('menuPanel');
     if (menuToggle) {
-        menuToggle.addEventListener('click', openMenu);
+        menuToggle.addEventListener('click', () => {
+            openMenu();
+            startBusiestChannelListener();
+        });
     }
     if (menuClose) {
-        menuClose.addEventListener('click', closeMenu);
+        menuClose.addEventListener('click', () => {
+            closeMenu();
+            stopBusiestChannelListener();
+        });
     }
     if (menuBackdrop) {
-        menuBackdrop.addEventListener('click', closeMenu);
+        menuBackdrop.addEventListener('click', () => {
+            closeMenu();
+            stopBusiestChannelListener();
+        });
     }
     if (menuPanel) {
         menuPanel.addEventListener('click', (event) => {
             if (event.target && event.target.classList.contains('menu-item')) {
                 closeMenu();
+                stopBusiestChannelListener();
+            }
+        });
+    }
+
+    document.addEventListener('keydown', (event) => {
+        if (event.ctrlKey && event.key.toLowerCase() === 'k') {
+            event.preventDefault();
+            if (searchInput) {
+                searchInput.focus();
+                searchInput.select();
+            }
+        }
+        if (event.ctrlKey && event.key.toLowerCase() === 'l') {
+            event.preventDefault();
+            leaveChannel();
+        }
+    });
+
+    const joinBusiestBtn = document.getElementById('joinBusiestBtn');
+    if (joinBusiestBtn) {
+        joinBusiestBtn.addEventListener('click', joinBusiestChannel);
+    }
+
+    const commandSuggestions = document.getElementById('commandSuggestions');
+    if (commandSuggestions) {
+        commandSuggestions.addEventListener('click', (event) => {
+            const item = event.target.closest('.command-item');
+            if (!item) return;
+            const cmd = item.getAttribute('data-command');
+            if (cmd) {
+                insertCommand(cmd);
             }
         });
     }
 
     setupLongPress();
+
+    window.addEventListener('beforeunload', () => {
+        if (!currentChannel || !userName) return;
+        if (explicitLeave) return;
+        const lastSession = getLastSession();
+        if (lastSession && lastSession.updatedAt && Date.now() - lastSession.updatedAt > LAST_SESSION_TTL_MS) {
+            return;
+        }
+        setLastSession({ channel: currentChannel, name: userName, active: true });
+    });
 
     // Check if URL has channel parameter
     if (!await checkURLForChannel()) {

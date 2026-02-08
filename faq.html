@@ -58,31 +58,91 @@
             "@type": "Answer",
             "text": "Yes. Use Change name from the menu to update it for your current session."
           }
+        },
+        {
+          "@type": "Question",
+          "name": "Why can't I use a name that already exists?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Names must be unique within a channel so people can recognize who is speaking."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Does chat history stay forever?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Messages are stored for the channel so participants can read them while in the room. Avoid sharing sensitive information."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Can I reuse a channel number?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Yes. Anyone with the same number joins the same room, so choose a fresh number when you want a new space."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "How do I switch the theme?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Open the hamburger menu and select the theme option. Your choice is saved."
+          }
         }
       ]
     }
     </script>
 </head>
-<body>
+<body class="theme-dark">
     <div class="page-screen">
         <div class="page-card">
             <div class="page-header">
                 <div>
                     <h1>FAQ</h1>
                     <p>Quick answers to common questions about TrulyChat.</p>
+                    <div class="page-meta">Updated with the latest chat features.</div>
                 </div>
                 <a href="index.html" class="page-back">Back to join</a>
             </div>
             <div class="page-content">
-                <div class="page-list">
-                    <h3>How do I join a channel?</h3>
+                <details class="page-details" open>
+                    <summary>How do I join a channel?</summary>
                     <p>Enter your name, type a channel number, and select Join Channel.</p>
-                    <h3>Do I need an account?</h3>
+                </details>
+                <details class="page-details">
+                    <summary>Do I need an account?</summary>
                     <p>No. TrulyChat works without sign-up. Just pick a name and a channel.</p>
-                    <h3>How do I invite others?</h3>
+                </details>
+                <details class="page-details">
+                    <summary>How do I invite others?</summary>
                     <p>Share the channel number or use the Invite option from the chat menu.</p>
-                    <h3>Can I change my name?</h3>
+                </details>
+                <details class="page-details">
+                    <summary>Can I change my name?</summary>
                     <p>Yes. Use Change name from the menu to update it for your current session.</p>
+                </details>
+                <details class="page-details">
+                    <summary>Why can't I use a name that already exists?</summary>
+                    <p>Names are unique within a channel so everyone can recognize who is speaking.</p>
+                </details>
+                <details class="page-details">
+                    <summary>Does chat history stay forever?</summary>
+                    <p>Messages are stored for the channel so participants can read them while in the room. Avoid sharing sensitive information.</p>
+                </details>
+                <details class="page-details">
+                    <summary>Can I reuse a channel number?</summary>
+                    <p>Yes. Anyone with the same number joins the same room, so choose a fresh number when you want a new space.</p>
+                </details>
+                <details class="page-details">
+                    <summary>How do I switch the theme?</summary>
+                    <p>Open the hamburger menu and select the theme option. Your choice is saved.</p>
+                </details>
+
+                <div class="page-actions">
+                    <a href="help.html">Still need help?</a>
+                    <a href="privacy.html" class="secondary">Privacy details</a>
                 </div>
             </div>
         </div>
