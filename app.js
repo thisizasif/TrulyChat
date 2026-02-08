@@ -18,6 +18,9 @@ let currentTheme = 'system';
 let pendingReply = null;
 let typingLastSent = 0;
 let explicitLeave = false;
+let currentOnlineIds = new Set();
+let onlineHeartbeatTimer = null;
+let connectedListener = null;
 // Defaults when opening chat.html directly without a channel
 const DEFAULT_DIRECT_CHANNEL = '111';
 const DEFAULT_DIRECT_NAME = 'iLOveSky';
@@ -29,6 +32,7 @@ const SOUND_TOGGLE_KEY = 'trulychat_sound_enabled';
 const LAST_SESSION_KEY = 'trulychat_last_session';
 const LAST_SESSION_TTL_MS = 6 * 60 * 60 * 1000;
 let busiestChannelListener = null;
+const SESSION_PREFIX = 'trulychat_session_';
 const COMMANDS = [
     { cmd: '/invite', label: 'Invite others' },
     { cmd: '/clear', label: 'Clear chat locally' },
@@ -83,6 +87,50 @@ function setLastSession(data) {
 
 function getServerTime() {
     return Date.now() + serverTimeOffset;
+}
+
+function normalizeTimestamp(value) {
+    const num = Number(value);
+    if (Number.isFinite(num) && num > 0) return num;
+    return getServerTime();
+}
+
+function getSessionKey(channel, name) {
+    const safeChannel = String(channel || '').trim();
+    const safeName = sanitizeName(name || '');
+    if (!safeChannel || !safeName) return null;
+    return `${SESSION_PREFIX}${safeChannel}_${nameToKey(safeName)}`;
+}
+
+function loadSession(channel, name) {
+    const key = getSessionKey(channel, name);
+    if (!key) return null;
+    const raw = sessionStorage.getItem(key);
+    if (!raw) return null;
+    try {
+        return JSON.parse(raw);
+    } catch (error) {
+        return null;
+    }
+}
+
+function saveSession(channel, name, joinTs) {
+    const key = getSessionKey(channel, name);
+    if (!key) return;
+    const payload = {
+        channel: String(channel),
+        name: sanitizeName(name),
+        joinTimestamp: Number(joinTs) || getServerTime(),
+        updatedAt: Date.now(),
+        userId: userId || null
+    };
+    sessionStorage.setItem(key, JSON.stringify(payload));
+}
+
+function clearSession(channel, name) {
+    const key = getSessionKey(channel, name);
+    if (!key) return;
+    sessionStorage.removeItem(key);
 }
 
 function getMaxChannelNumber() {
@@ -207,21 +255,27 @@ function ensureAudioContext() {
 }
 
 function playNotificationSound() {
-    if (!soundEnabled || !soundReady) return;
+    if (!soundEnabled || localStorage.getItem(SOUND_TOGGLE_KEY) !== '1') return;
     const ctx = ensureAudioContext();
     if (!ctx) return;
+    const playBeep = () => {
+        const oscillator = ctx.createOscillator();
+        const gain = ctx.createGain();
+        oscillator.type = 'sine';
+        oscillator.frequency.value = 760;
+        gain.gain.value = 0.04;
+        oscillator.connect(gain);
+        gain.connect(ctx.destination);
+        oscillator.start();
+        oscillator.stop(ctx.currentTime + 0.08);
+    };
     if (ctx.state === 'suspended') {
-        ctx.resume().catch(() => {});
+        ctx.resume().then(() => {
+            playBeep();
+        }).catch(() => {});
+        return;
     }
-    const oscillator = ctx.createOscillator();
-    const gain = ctx.createGain();
-    oscillator.type = 'sine';
-    oscillator.frequency.value = 760;
-    gain.gain.value = 0.04;
-    oscillator.connect(gain);
-    gain.connect(ctx.destination);
-    oscillator.start();
-    oscillator.stop(ctx.currentTime + 0.08);
+    playBeep();
 }
 
 function setSoundEnabled(enabled) {
@@ -233,17 +287,15 @@ function setSoundEnabled(enabled) {
     }
     if (soundEnabled) {
         const ctx = ensureAudioContext();
+        soundReady = true;
         if (ctx && ctx.state === 'suspended') {
-            ctx.resume().then(() => {
-                soundReady = true;
-            }).catch(() => {
-                soundReady = false;
-            });
-        } else {
-            soundReady = true;
+            ctx.resume().catch(() => {});
         }
     } else {
         soundReady = false;
+        if (audioContext && audioContext.state === 'running') {
+            audioContext.suspend().catch(() => {});
+        }
     }
 }
 
@@ -261,10 +313,17 @@ async function isNameTaken(channel, name, excludeUserId = null) {
     if (!channel || !name) return false;
     const snapshot = await database.ref(`channels/${channel}/online`).once('value');
     let taken = false;
+    const now = Date.now();
+    const staleLimit = 45000;
     snapshot.forEach((child) => {
         if (excludeUserId && child.key === excludeUserId) return;
         const data = child.val();
         if (!data || !data.name) return;
+        const lastSeen = data.timestamp || data.joinedAt || 0;
+        if (lastSeen && now - lastSeen > staleLimit) {
+            database.ref(`channels/${channel}/online/${child.key}`).remove();
+            return;
+        }
         const existing = sanitizeName(data.name).toLowerCase();
         if (existing === sanitizeName(name).toLowerCase()) {
             taken = true;
@@ -326,14 +385,20 @@ async function joinChannel(channelFromUrl = null) {
     await ensureServerTime();
 
     currentChannel = channel;
-    userId = generateUserId();
+    const existingSession = loadSession(channel, providedName);
+    userId = existingSession && existingSession.userId
+        ? existingSession.userId
+        : generateUserId();
     userName = providedName;
     currentUserKey = nameToKey(providedName);
-    joinTimestamp = getServerTime(); // Set join time using server offset
+    joinTimestamp = existingSession && existingSession.joinTimestamp
+        ? existingSession.joinTimestamp
+        : getServerTime(); // Set join time using server offset
     lastOnlineCount = 0;
     explicitLeave = false;
     clearReply();
     setLastSession({ channel, name: userName, active: true });
+    saveSession(channel, userName, joinTimestamp);
 
     // Switch to chat screen
     const channelScreenEl = document.getElementById('channelScreen');
@@ -380,7 +445,10 @@ function setupChannelListeners() {
         const onlineCount = snapshot.numChildren();
         updateOnlineCount(onlineCount);
         updateOnlineUsersList(snapshot);
-
+        currentOnlineIds = new Set();
+        snapshot.forEach((child) => {
+            if (child.key) currentOnlineIds.add(child.key);
+        });
         lastOnlineCount = onlineCount;
     });
 
@@ -409,6 +477,24 @@ function setupChannelListeners() {
 
     // Remove user when they disconnect
     userRef.onDisconnect().remove();
+    if (connectedListener) {
+        database.ref('.info/connected').off('value', connectedListener);
+    }
+    connectedListener = (snap) => {
+        if (snap.val() === true && userRef) {
+            userRef.onDisconnect().remove();
+            userRef.update({ name: userName, timestamp: Date.now() });
+        }
+    };
+    database.ref('.info/connected').on('value', connectedListener);
+    if (onlineHeartbeatTimer) {
+        clearInterval(onlineHeartbeatTimer);
+    }
+    onlineHeartbeatTimer = setInterval(() => {
+        if (userRef) {
+            userRef.update({ timestamp: Date.now(), name: userName });
+        }
+    }, 5000);
 
     // Typing indicator setup
     typingRef = database.ref(`channels/${currentChannel}/typing/${userId}`);
@@ -416,6 +502,7 @@ function setupChannelListeners() {
     typingListener = database.ref(`channels/${currentChannel}/typing`).on('value', (snapshot) => {
         updateTypingIndicator(snapshot);
     });
+
 }
 
 // Remove Firebase listeners
@@ -438,6 +525,14 @@ function removeChannelListeners() {
     if (typingListener) {
         database.ref(`channels/${currentChannel}/typing`).off('value', typingListener);
         typingListener = null;
+    }
+    if (connectedListener) {
+        database.ref('.info/connected').off('value', connectedListener);
+        connectedListener = null;
+    }
+    if (onlineHeartbeatTimer) {
+        clearInterval(onlineHeartbeatTimer);
+        onlineHeartbeatTimer = null;
     }
 }
 
@@ -487,6 +582,7 @@ function sendMessage() {
     setTyping(false);
     clearReply();
 }
+
 
 function renderReactions(reactions) {
     if (!reactions) return '';
@@ -606,6 +702,13 @@ function displayMessage(message, messageId) {
     messagesContainer.appendChild(messageElement);
     const isOwnMessage = message.userId === userId;
     const isSystemMessage = message.type === 'system';
+    if (isOwnMessage && messageId) {
+        lastOwnMessageId = messageId;
+        lastOwnMessageTimestamp = normalizeTimestamp(message.timestamp);
+    }
+    if (!isOwnMessage && !isSystemMessage) {
+        updateReadReceipt();
+    }
     if (wasNearBottom || isOwnMessage) {
         messagesContainer.scrollTop = messagesContainer.scrollHeight;
         resetUnreadIndicator();
@@ -834,6 +937,9 @@ function updateOnlineCount(count) {
             updatedAt: Date.now()
         }).catch(() => {});
     }
+    if (lastReadReceiptsSnapshot) {
+        updateSeenStatus(lastReadReceiptsSnapshot);
+    }
     if (count <= 1 && !hasUserMessages()) {
         showEmptyState();
     }
@@ -851,21 +957,37 @@ function updateOnlineUsers() {
 
 function updateOnlineUsersList(snapshot) {
     const container = document.getElementById('onlineUsers');
-    const menuContainer = document.getElementById('menuOnlineUsers');
-    if (!container) return;
-
-    const users = [];
-    snapshot.forEach((child) => {
-        const data = child.val();
-        if (data && data.name) {
-            users.push({ id: child.key, name: data.name });
+    let menuContainer = document.getElementById('menuOnlineUsers');
+    if (!menuContainer) {
+        const onlineSection = document.querySelector('.menu-section .menu-online');
+        if (onlineSection && onlineSection.parentElement) {
+            menuContainer = document.createElement('div');
+            menuContainer.id = 'menuOnlineUsers';
+            menuContainer.className = 'menu-users';
+            onlineSection.parentElement.appendChild(menuContainer);
         }
+    }
+    const raw = snapshot && snapshot.val ? (snapshot.val() || {}) : {};
+    const users = Object.entries(raw).map(([id, data]) => {
+        const name = data && data.name ? data.name : 'User';
+        return { id, name };
     });
+    if (users.length === 0 && snapshot) {
+        snapshot.forEach((child) => {
+            const data = child.val();
+            const name = data && data.name ? data.name : 'User';
+            users.push({ id: child.key, name });
+        });
+    }
 
     if (users.length === 0) {
-        container.innerHTML = '<div class="empty-online">No one is online</div>';
+        if (container) {
+            container.innerHTML = '<div class="empty-online">No one is online</div>';
+            container.style.display = 'flex';
+        }
         if (menuContainer) {
             menuContainer.innerHTML = '<div class="empty-online">No one is online</div>';
+            menuContainer.style.display = 'grid';
         }
         return;
     }
@@ -882,9 +1004,25 @@ function updateOnlineUsersList(snapshot) {
         `;
     }).join('');
 
-    container.innerHTML = listHtml;
+    if (container) {
+        container.innerHTML = listHtml;
+        container.style.display = 'flex';
+    }
     if (menuContainer) {
-        menuContainer.innerHTML = listHtml;
+        const menuHtml = users.map((user) => {
+            const safeName = escapeHTML(user.name);
+            const initials = escapeHTML(getInitials(user.name));
+            const isSelf = user.id === userId;
+            const avatarColor = getAvatarColor(user.id || user.name || '');
+            return `
+                <div class="menu-user${isSelf ? ' self' : ''}">
+                    <span class="menu-avatar" style="background: ${avatarColor};">${initials}</span>
+                    <span class="menu-name">${safeName}</span>
+                </div>
+            `;
+        }).join('');
+        menuContainer.innerHTML = menuHtml;
+        menuContainer.style.display = 'grid';
     }
 }
 
@@ -1257,6 +1395,7 @@ function openNameModal() {
             }
         }
 
+        const oldName = userName;
         userName = next;
         currentUserKey = nameToKey(next);
         localStorage.setItem('trulychat_name', next);
@@ -1270,9 +1409,58 @@ function openNameModal() {
         }
         if (currentChannel) {
             setLastSession({ channel: currentChannel, name: next, active: true });
+            clearSession(currentChannel, oldName);
+            saveSession(currentChannel, next, joinTimestamp || getServerTime());
         }
         showToast('Name updated', 'success');
         close();
+    });
+}
+
+function changeChannelPrompt() {
+    if (!currentChannel) return;
+    const existing = document.getElementById('channelModal');
+    if (existing) return;
+    const maxChannel = getMaxChannelNumber();
+
+    const modal = document.createElement('div');
+    modal.id = 'channelModal';
+    modal.className = 'modal-backdrop';
+    modal.innerHTML = `
+        <div class="modal-content">
+            <h3>Change channel</h3>
+            <p>Enter a channel number to join with the same name.</p>
+            <input type="number" id="channelModalInput" min="1" max="${maxChannel}" placeholder="1-${maxChannel}" />
+            <div class="modal-actions">
+                <button type="button" class="modal-btn cancel">Cancel</button>
+                <button type="button" class="modal-btn save">Join</button>
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(modal);
+    const input = document.getElementById('channelModalInput');
+    if (input) {
+        input.value = String(currentChannel || '');
+        input.focus();
+        input.select();
+    }
+
+    const close = () => modal.remove();
+    modal.addEventListener('click', (event) => {
+        if (event.target === modal) close();
+    });
+    modal.querySelector('.cancel').addEventListener('click', close);
+    modal.querySelector('.save').addEventListener('click', () => {
+        const next = String(input.value || '').trim();
+        const channelNumber = parseInt(next, 10);
+        if (!next || Number.isNaN(channelNumber) || channelNumber < 1 || channelNumber > maxChannel) {
+            showToast(`Please enter a valid channel number (1-${maxChannel})`, 'warning');
+            return;
+        }
+        close();
+        leaveChannel({ redirect: false });
+        joinChannel(String(channelNumber));
     });
 }
 
@@ -1293,6 +1481,11 @@ function openMenu() {
     const backdrop = document.getElementById('menuBackdrop');
     const toggle = document.getElementById('menuToggle');
     if (!panel || !backdrop || !toggle) return;
+    if (currentChannel) {
+        database.ref(`channels/${currentChannel}/online`).once('value')
+            .then(updateOnlineUsersList)
+            .catch(() => {});
+    }
     refreshBusiestChannelButton();
     panel.classList.add('open');
     backdrop.classList.add('open');
@@ -1663,6 +1856,23 @@ function leaveChannel(options = {}) {
     if (currentChannel && userId) {
         // Remove user from online list
         database.ref(`channels/${currentChannel}/online/${userId}`).remove();
+        if (currentUserKey) {
+            database.ref(`channels/${currentChannel}/messages/${currentUserKey}`).remove();
+        }
+        database.ref(`channels/${currentChannel}/messagesAll`)
+            .orderByChild('userId')
+            .equalTo(userId)
+            .once('value')
+            .then((snapshot) => {
+                const updates = {};
+                snapshot.forEach((child) => {
+                    updates[child.key] = null;
+                });
+                if (Object.keys(updates).length > 0) {
+                    database.ref(`channels/${currentChannel}/messagesAll`).update(updates);
+                }
+            })
+            .catch(() => {});
 
         // Add leave message
         addSystemMessage(`You left Channel ${currentChannel}`);
@@ -1721,6 +1931,8 @@ function leaveChannel(options = {}) {
     hideScrollToLatestButton();
 
     // Reset variables
+    const prevChannel = currentChannel;
+    const prevName = userName;
     currentChannel = null;
     userId = null;
     userName = null;
@@ -1733,6 +1945,7 @@ function leaveChannel(options = {}) {
     currentUserKey = null;
     lastOnlineCount = 0;
     joinTimestamp = null;
+    clearSession(prevChannel, prevName);
 }
 
 // Handle Enter key press
@@ -1902,6 +2115,11 @@ document.addEventListener('DOMContentLoaded', async function () {
         nextChannelBtn.addEventListener('click', nextChannel);
     }
 
+    const changeChannelBtn = document.getElementById('changeChannelBtn');
+    if (changeChannelBtn) {
+        changeChannelBtn.addEventListener('click', changeChannelPrompt);
+    }
+
     const menuToggle = document.getElementById('menuToggle');
     const menuClose = document.getElementById('menuClose');
     const menuBackdrop = document.getElementById('menuBackdrop');
@@ -1933,6 +2151,7 @@ document.addEventListener('DOMContentLoaded', async function () {
         });
     }
 
+
     document.addEventListener('keydown', (event) => {
         if (event.ctrlKey && event.key.toLowerCase() === 'k') {
             event.preventDefault();
@@ -1946,6 +2165,7 @@ document.addEventListener('DOMContentLoaded', async function () {
             leaveChannel();
         }
     });
+
 
     const joinBusiestBtn = document.getElementById('joinBusiestBtn');
     if (joinBusiestBtn) {
@@ -1974,6 +2194,9 @@ document.addEventListener('DOMContentLoaded', async function () {
             return;
         }
         setLastSession({ channel: currentChannel, name: userName, active: true });
+        if (userRef) {
+            userRef.remove();
+        }
     });
 
     // Check if URL has channel parameter

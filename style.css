@@ -531,10 +531,46 @@ button:active {
     color: #555;
 }
 
+
 .menu-users {
-    display: flex;
-    flex-wrap: wrap;
+    display: grid;
     gap: 8px;
+    margin-top: 8px;
+    max-height: 240px;
+    overflow-y: auto;
+    padding-right: 4px;
+}
+
+.menu-user {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 10px;
+    border-radius: 12px;
+    background: rgba(15, 23, 42, 0.08);
+    color: #2b3448;
+}
+
+.menu-user.self {
+    border: 1px solid rgba(14, 165, 164, 0.4);
+    background: rgba(14, 165, 164, 0.1);
+}
+
+.menu-avatar {
+    width: 28px;
+    height: 28px;
+    border-radius: 10px;
+    color: #ffffff;
+    font-size: 12px;
+    font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.menu-name {
+    font-weight: 600;
+    font-size: 0.92rem;
 }
 
 
@@ -556,6 +592,7 @@ button:active {
     border-radius: 20px;
     font-weight: 600;
     font-size: clamp(14px, 2.5vw, 16px);
+    
 }
 
 .leave-btn {
@@ -699,6 +736,7 @@ button:active {
     letter-spacing: 0.6px;
     opacity: 0.7;
 }
+
 
 .message-actions {
     display: flex;
@@ -1882,7 +1920,7 @@ input[type="number"],
 /* Ensure online count looks good */
 #onlineCount {
     background: rgba(255, 255, 255, 0.2);
-    padding: 8px 16px;
+    padding: 3px 16px;
     border-radius: 20px;
     font-weight: 600;
     font-size: clamp(14px, 2.5vw, 16px);
@@ -2561,14 +2599,15 @@ body.theme-light .messages-container {
     box-shadow: none;
 }
 
-
-
-
-
-/* Hide online list on main view */
+/* Hide online list in main view (show only in menu) */
 .online-users {
-    display: none;
+    display: none !important;
 }
+
+
+
+
+
 
 
 /* Menu links */
@@ -2824,6 +2863,16 @@ body.theme-dark .page-inline-links a {
 
 body.theme-dark .page-details summary {
     color: #e2e6f6;
+}
+
+body.theme-dark .menu-user {
+    background: rgba(15, 23, 42, 0.5);
+    color: #e2e8f0;
+}
+
+body.theme-dark .menu-user.self {
+    border-color: rgba(45, 212, 191, 0.4);
+    background: rgba(45, 212, 191, 0.12);
 }
 
 body.theme-dark .join-panel {
@@ -4519,9 +4568,14 @@ body.theme-dark .landing-ad {
 
 .chat-body .online-badge,
 .chat-body .user-badge {
-    background: rgba(148, 163, 184, 0.12);
-    border: 1px solid rgba(148, 163, 184, 0.25);
-    color: var(--v4-muted);
+    background: rgba(45, 212, 191, 0.18);
+    border: none;
+    color: #d1fff7;
+    border-radius: 999px;
+    padding: 4px 10px;
+    font-weight: 600;
+    letter-spacing: 0.1px;
+    font-size: 0.85rem;
 }
 
 .chat-body .leave-btn,

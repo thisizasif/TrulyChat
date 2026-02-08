@@ -19,6 +19,7 @@ function showJoinError(message) {
 
 const LAST_SESSION_KEY = 'trulychat_last_session';
 const LAST_SESSION_TTL_MS = 6 * 60 * 60 * 1000;
+const BUSIEST_STALE_MS = 10 * 60 * 1000;
 
 function getLastSession() {
     const raw = localStorage.getItem(LAST_SESSION_KEY);
@@ -28,6 +29,56 @@ function getLastSession() {
     } catch (error) {
         return null;
     }
+}
+
+function getBusiestFromMeta(snapshot) {
+    let busiest = null;
+    let count = 0;
+    const now = Date.now();
+    snapshot.forEach((child) => {
+        const key = String(child.key || '').trim();
+        const channelNumber = parseInt(key, 10);
+        if (!Number.isFinite(channelNumber)) return;
+        const data = child.val() || {};
+        const onlineCount = Number(data.onlineCount || 0);
+        const updatedAt = Number(data.updatedAt || 0);
+        if (!onlineCount || now - updatedAt > BUSIEST_STALE_MS) return;
+        if (onlineCount > count) {
+            count = onlineCount;
+            busiest = channelNumber;
+        }
+    });
+    return busiest ? { channel: busiest, count } : null;
+}
+
+function updateBusiestUI(result) {
+    const channelEl = document.getElementById('busiestChannel');
+    const countEl = document.getElementById('busiestCount');
+    const joinBtn = document.getElementById('joinBusiestBtnLanding');
+    if (!channelEl || !countEl || !joinBtn) return;
+    if (!result) {
+        channelEl.textContent = '---';
+        countEl.textContent = 'No active channels';
+        joinBtn.disabled = true;
+        return;
+    }
+    channelEl.textContent = String(result.channel);
+    countEl.textContent = `${result.count} online`;
+    joinBtn.disabled = false;
+    joinBtn.dataset.channel = String(result.channel);
+}
+
+function startBusiestListener() {
+    if (typeof database === 'undefined') {
+        updateBusiestUI(null);
+        return;
+    }
+    database.ref('channelsMeta').on('value', (snapshot) => {
+        const result = getBusiestFromMeta(snapshot);
+        updateBusiestUI(result);
+    }, () => {
+        updateBusiestUI(null);
+    });
 }
 
 function startChat() {
@@ -64,21 +115,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const channelParam = params.get('channel');
     const nameParam = params.get('name');
 
-    if (!errorParam) {
-        const lastSession = getLastSession();
-        const maxChannel = getMaxChannelNumber();
-        if (lastSession && lastSession.active) {
-            const channelNumber = parseInt(lastSession.channel, 10);
-            const isFresh = !lastSession.updatedAt || (Date.now() - lastSession.updatedAt) <= LAST_SESSION_TTL_MS;
-            if (isFresh && channelNumber >= 1 && channelNumber <= maxChannel && lastSession.name) {
-                const rejoinParams = new URLSearchParams();
-                rejoinParams.set('channel', String(channelNumber));
-                rejoinParams.set('name', String(lastSession.name));
-                window.location.href = `chat.html?${rejoinParams.toString()}`;
-                return;
-            }
-        }
-    }
+    // Auto-join disabled: always stay on join page
 
     const joinBtn = document.getElementById('joinBtn');
     if (joinBtn) {
@@ -88,6 +125,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const nameInput = document.getElementById('nameInput');
     const channelInput = document.getElementById('channelInput');
     const quickJoinBtn = document.getElementById('quickJoin111Btn');
+    const joinBusiestBtn = document.getElementById('joinBusiestBtnLanding');
     const maxChannel = getMaxChannelNumber();
     if (nameInput) {
         nameInput.addEventListener('keydown', (event) => {
@@ -106,6 +144,14 @@ document.addEventListener('DOMContentLoaded', () => {
             if (channelInput) {
                 channelInput.value = '111';
             }
+            startChat();
+        });
+    }
+    if (joinBusiestBtn) {
+        joinBusiestBtn.addEventListener('click', () => {
+            const target = joinBusiestBtn.dataset.channel;
+            if (!target || !channelInput) return;
+            channelInput.value = target;
             startChat();
         });
     }
@@ -146,4 +192,6 @@ document.addEventListener('DOMContentLoaded', () => {
     if (errorParam === 'name_taken') {
         showJoinError('That name is already in use in this channel. Please choose another.');
     }
+
+    startBusiestListener();
 });

@@ -108,7 +108,21 @@
                             <small class="field-hint">Share this number to invite people.</small>
                         </label>
                         <button id="joinBtn" type="button">Join Channel</button>
-                        <button id="quickJoin111Btn" type="button" class="secondary-btn">Join Channel 111</button>
+                        <button id="quickJoin111Btn" type="button" class="secondary-btn">Instant Join 111</button>
+                        <div id="busiestPanel" class="busiest-panel" aria-live="polite">
+                            <div class="busiest-header">
+                                <span class="busiest-label">Most active right now</span>
+                                <span id="busiestCount" class="busiest-count">-- online</span>
+                            </div>
+                            <div class="busiest-body">
+                                <div class="busiest-channel">
+                                    Channel <span id="busiestChannel">---</span>
+                                </div>
+                                <button id="joinBusiestBtnLanding" type="button" class="busiest-join" disabled>
+                                    Join busiest channel
+                                </button>
+                            </div>
+                        </div>
                         <div id="joinError" class="join-error" role="alert"></div>
                     </div>
                     <div class="join-note">Tip: share your channel number with friends to join instantly.</div>
@@ -137,6 +151,9 @@
         </div>
     </div>
 
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    <script src="firebase-config.js"></script>
     <script src="config.js"></script>
     <script src="landing.js"></script>
     <script type="application/ld+json">
