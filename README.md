@@ -28,15 +28,27 @@
   </a>
 </div>
 
-**What is TrulyChat**
-TrulyChat lets anyone create a private chat room using a channel number. Share the number, chat live, and move on whenever you want. No accounts, no friction.
+<br />
 
-**Highlights**
-- Channel-based chat with shareable room numbers
-- Real-time messaging using Firebase Realtime Database
-- Typing indicator, reply preview, edit, delete, copy, reactions
-- Mobile-first UI with a consistent hamburger menu
-- SEO-ready landing + help/about/privacy pages
+<div align="center">
+  <div style="max-width: 900px; margin: 0 auto; padding: 18px 20px; border: 1px solid rgba(148,163,184,.3); border-radius: 16px;">
+    <strong>What is TrulyChat</strong>
+    <div style="margin-top: 6px; color: #cbd5f0;">TrulyChat lets anyone create a private chat room using a channel number. Share the number, chat live, and move on whenever you want. No accounts, no friction.</div>
+  </div>
+</div>
+
+<br />
+
+<div align="center">
+  <div style="max-width: 900px; margin: 0 auto; display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px;">
+    <div style="padding: 12px 14px; border: 1px solid rgba(148,163,184,.25); border-radius: 14px;">⚡ <strong>Instant rooms</strong><br />Start a private room in seconds.</div>
+    <div style="padding: 12px 14px; border: 1px solid rgba(148,163,184,.25); border-radius: 14px;">🔒 <strong>Private by number</strong><br />Only people with the code can join.</div>
+    <div style="padding: 12px 14px; border: 1px solid rgba(148,163,184,.25); border-radius: 14px;">💬 <strong>Real-time chat</strong><br />Fast messages with typing status.</div>
+    <div style="padding: 12px 14px; border: 1px solid rgba(148,163,184,.25); border-radius: 14px;">🎯 <strong>Focused UX</strong><br />Clean, mobile-first interface.</div>
+  </div>
+</div>
+
+<br />
 
 **Pages**
 - `index.html` — welcome page
@@ -57,6 +69,7 @@ window.TRULYCHAT_MAX_USERS_PER_CHANNEL = 50;
 
 - `scripts/firebase-config.js` — your Firebase project config
 
+
 **SEO Assets**
 - `sitemap.xml`
 - `robots.txt`
@@ -64,12 +77,14 @@ window.TRULYCHAT_MAX_USERS_PER_CHANNEL = 50;
 **Deployment**
 This project is designed for GitHub Pages. Push to the `TrulyChat` repo and enable Pages on the `main` branch.
 
-**Notes**
-- Keep `scripts/firebase-config.js` credentials in sync with your Firebase project.
-- Update the canonical URLs in `index.html`, `join.html`, `sitemap.xml`, and page heads if your domain changes.
-
 **Developer**
 - **Name:** thisizasif
 - **Role:** Creator & Developer of TrulyChat
 - **Focus:** Real-time chat systems, UI/UX, performance, and clean architecture
 - **Contact:** thisizasif@gmail.com
+- **Social:**
+  - GitHub: https://github.com/thisizasif
+
+**Notes**
+- Use this website responsibly and avoid sharing sensitive or harmful content.
+
