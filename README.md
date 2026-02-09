@@ -57,16 +57,6 @@ window.TRULYCHAT_MAX_USERS_PER_CHANNEL = 50;
 
 - `scripts/firebase-config.js` — your Firebase project config
 
-**Local Development**
-1. Open the folder in VS Code.
-2. Use Live Server or run a static server:
-
-```bash
-python -m http.server 5500
-```
-
-3. Visit `http://localhost:5500/index.html`.
-
 **SEO Assets**
 - `sitemap.xml`
 - `robots.txt`
@@ -77,3 +67,9 @@ This project is designed for GitHub Pages. Push to the `TrulyChat` repo and enab
 **Notes**
 - Keep `scripts/firebase-config.js` credentials in sync with your Firebase project.
 - Update the canonical URLs in `index.html`, `join.html`, `sitemap.xml`, and page heads if your domain changes.
+
+**Developer**
+- **Name:** thisizasif
+- **Role:** Creator & Developer of TrulyChat
+- **Focus:** Real-time chat systems, UI/UX, performance, and clean architecture
+- **Contact:** thisizasif@gmail.com
