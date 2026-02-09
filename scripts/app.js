@@ -24,6 +24,7 @@ let isReloading = false;
 let messagesUserRef = null;
 let connectedListener = null;
 let isWindowFocused = true;
+const MAX_MESSAGE_LENGTH = 5000;
 let onlineUsersCache = [];
 const SESSION_PREFIX = 'trulychat_session_';
 // Defaults when opening chat.html directly without a channel
@@ -450,6 +451,16 @@ async function joinChannel(channelFromUrl = null) {
 
     // Update online users count
     updateOnlineUsers();
+
+    // Increment visitor count once a user successfully joins a channel
+    if (window.firestore && typeof firebase !== 'undefined' && firebase.firestore) {
+        try {
+            const inc = firebase.firestore.FieldValue.increment(1);
+            window.firestore.collection('visitors').doc('total').set({ count: inc }, { merge: true });
+        } catch (error) {
+            // Ignore visitor count errors to avoid blocking join.
+        }
+    }
 }
 
 // Setup Firebase database listeners
@@ -602,7 +613,7 @@ function cleanupChannelIfEmpty(channel) {
 // Send a message
 function sendMessage() {
     const messageInput = document.getElementById('messageInput');
-    const messageText = messageInput.value.trim().slice(0, 500);
+    const messageText = messageInput.value.trim().slice(0, MAX_MESSAGE_LENGTH);
 
     if (!messageText) return;
 
@@ -772,21 +783,9 @@ function displayMessage(message, messageId) {
     if (!isOwnMessage && !isSystemMessage) {
         updateReadReceipt();
     }
-    if (wasNearBottom || isOwnMessage) {
-        messagesContainer.scrollTop = messagesContainer.scrollHeight;
-        resetUnreadIndicator();
-        if (!isNearBottom(messagesContainer)) {
-            showScrollToLatestButton();
-        } else {
-            hideScrollToLatestButton();
-        }
-    } else {
-        if (!isOwnMessage && !isSystemMessage) {
-            unreadCount += 1;
-            updateUnreadIndicator();
-            showScrollToLatestButton();
-        }
-    }
+    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    resetUnreadIndicator();
+    hideScrollToLatestButton();
     if (!isOwnMessage && !isSystemMessage) {
         if (!isWindowFocused) {
             playNotificationSound();
@@ -1317,7 +1316,7 @@ function startInlineEdit(messageElement) {
     editor.querySelector('.save').addEventListener('click', () => {
         const messageId = messageElement.dataset.messageId;
         if (!messageId) return;
-        const next = textarea.value.trim().slice(0, 500);
+        const next = textarea.value.trim().slice(0, MAX_MESSAGE_LENGTH);
         if (!next) return;
         const userKey = messageElement.dataset.userKey || currentUserKey;
         const updates = {
@@ -2068,7 +2067,8 @@ document.addEventListener('DOMContentLoaded', async function () {
         isWindowFocused = !document.hidden;
     });
     const navEntry = performance.getEntriesByType('navigation')[0];
-    isReloading = navEntry ? navEntry.type === 'reload' : false;
+    const legacyNav = performance.navigation ? performance.navigation.type : null;
+    isReloading = (navEntry && navEntry.type === 'reload') || legacyNav === 1;
     database.ref('.info/serverTimeOffset').on('value', (snapshot) => {
         serverTimeOffset = snapshot.val() || 0;
     });
@@ -2374,4 +2374,3 @@ function resetViewport() {
 // Listen for focus on input
 document.getElementById('messageInput').addEventListener('focus', setViewportForKeyboard);
 document.getElementById('messageInput').addEventListener('blur', resetViewport);
-

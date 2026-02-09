@@ -1,12 +1,8 @@
-(function () {
-    const theme = localStorage.getItem('trulychat_theme') || 'system';
-    if (theme === 'dark') document.body.classList.add('theme-dark');
-    if (theme === 'light') document.body.classList.add('theme-light');
-})();
-
-(function () {
+﻿(function () {
     const btn = document.getElementById('enterCodeBtn');
     if (!btn) return;
+
+    const BUSIEST_STALE_MS = 10 * 60 * 1000;
 
     const sanitize = (value) => String(value || '').replace(/\s+/g, ' ').trim().slice(0, 24);
     const maxChannel = () => {
@@ -67,39 +63,139 @@
             if (event.target === modal) close();
         });
         modal.querySelector('.cancel').addEventListener('click', close);
-                modal.querySelector('.save').addEventListener('click', async () => {
-                    const raw = String(input.value || '').trim();
-                    const channelNumber = parseInt(raw, 10);
-                    if (!raw || Number.isNaN(channelNumber) || channelNumber < 1 || channelNumber > maxChannel()) {
+        modal.querySelector('.save').addEventListener('click', async () => {
+            const raw = String(input.value || '').trim();
+            const channelNumber = parseInt(raw, 10);
+            if (!raw || Number.isNaN(channelNumber) || channelNumber < 1 || channelNumber > maxChannel()) {
+                if (errorEl) {
+                    errorEl.textContent = `Please enter a valid channel number (1-${maxChannel()}).`;
+                }
+                return;
+            }
+            if (typeof database !== 'undefined') {
+                const limit = maxUsersPerChannel();
+                if (Number.isFinite(limit) && limit !== Infinity) {
+                    try {
+                        const snapshot = await database.ref(`channels/${channelNumber}/online`).once('value');
+                        if (snapshot.numChildren() >= limit) {
+                            if (errorEl) {
+                                errorEl.textContent = `This channel is full. Maximum ${limit} users allowed.`;
+                            }
+                            return;
+                        }
+                    } catch (error) {
                         if (errorEl) {
-                            errorEl.textContent = `Please enter a valid channel number (1-${maxChannel()}).`;
+                            errorEl.textContent = 'Unable to verify channel capacity. Please try again.';
                         }
                         return;
                     }
-                    if (typeof database !== 'undefined') {
-                        const limit = maxUsersPerChannel();
-                        if (Number.isFinite(limit) && limit !== Infinity) {
-                            try {
-                                const snapshot = await database.ref(`channels/${channelNumber}/online`).once('value');
-                                if (snapshot.numChildren() >= limit) {
-                                    if (errorEl) {
-                                        errorEl.textContent = `This channel is full. Maximum ${limit} users allowed.`;
-                                    }
-                                    return;
-                                }
-                            } catch (error) {
-                                if (errorEl) {
-                                    errorEl.textContent = 'Unable to verify channel capacity. Please try again.';
-                                }
-                                return;
-                            }
-                        }
-                    }
-                    const name = await findAvailableName(channelNumber);
-                    const params = new URLSearchParams();
-                    params.set('channel', String(channelNumber));
-                    params.set('name', name);
-                    window.location.href = `chat.html?${params.toString()}`;
+                }
+            }
+            const name = await findAvailableName(channelNumber);
+            const params = new URLSearchParams();
+            params.set('channel', String(channelNumber));
+            params.set('name', name);
+            window.location.href = `chat.html?${params.toString()}`;
+        });
+    };
+
+    const updateBusiestUI = (result) => {
+        const channelEl = document.getElementById('welcomeBusiestChannel');
+        const countEl = document.getElementById('welcomeBusiestCount');
+        const joinBtn = document.getElementById('welcomeJoinBusiest');
+        if (!channelEl || !countEl || !joinBtn) return;
+        if (!result) {
+            channelEl.textContent = '---';
+            countEl.textContent = 'No active channels';
+            joinBtn.disabled = true;
+            joinBtn.dataset.channel = '';
+            return;
+        }
+        channelEl.textContent = String(result.channel);
+        countEl.textContent = `${result.count} online`;
+        joinBtn.disabled = false;
+        joinBtn.dataset.channel = String(result.channel);
+    };
+
+    const getBusiestFromMeta = (snapshot) => {
+        let busiest = null;
+        let count = 0;
+        const now = Date.now();
+        snapshot.forEach((child) => {
+            const key = String(child.key || '').trim();
+            const channelNumber = parseInt(key, 10);
+            if (!Number.isFinite(channelNumber)) return;
+            const data = child.val() || {};
+            const onlineCount = Number(data.onlineCount || 0);
+            const updatedAt = Number(data.updatedAt || 0);
+            if (!onlineCount || now - updatedAt > BUSIEST_STALE_MS) return;
+            if (onlineCount > count) {
+                count = onlineCount;
+                busiest = channelNumber;
+            }
+        });
+        return busiest ? { channel: busiest, count } : null;
+    };
+
+    const getBusiestFromChannels = (snapshot) => {
+        let busiest = null;
+        let count = 0;
+        snapshot.forEach((channelSnap) => {
+            const channelId = channelSnap.key;
+            if (!channelId) return;
+            const onlineSnap = channelSnap.child('online');
+            const onlineCount = onlineSnap.exists() ? onlineSnap.numChildren() : 0;
+            if (onlineCount > count) {
+                count = onlineCount;
+                busiest = channelId;
+            }
+        });
+        return busiest ? { channel: busiest, count } : null;
+    };
+
+    const startBusiestListener = () => {
+        if (typeof database === 'undefined') {
+            updateBusiestUI(null);
+            return;
+        }
+        database.ref('channelsMeta').on('value', (snapshot) => {
+            const result = getBusiestFromMeta(snapshot);
+            if (result) {
+                updateBusiestUI(result);
+                return;
+            }
+            database.ref('channels').once('value').then((channelsSnap) => {
+                updateBusiestUI(getBusiestFromChannels(channelsSnap));
+            }).catch(() => updateBusiestUI(null));
+        }, () => {
+            updateBusiestUI(null);
+        });
+    };
+
+    const initBusiestJoin = () => {
+        const joinBtn = document.getElementById('welcomeJoinBusiest');
+        if (!joinBtn) return;
+        joinBtn.addEventListener('click', async () => {
+            const target = joinBtn.dataset.channel;
+            if (!target) return;
+            const channelNumber = parseInt(target, 10);
+            if (!Number.isFinite(channelNumber)) return;
+            const name = await findAvailableName(channelNumber);
+            const params = new URLSearchParams();
+            params.set('channel', String(channelNumber));
+            params.set('name', name);
+            window.location.href = `chat.html?${params.toString()}`;
+        });
+    };
+
+    const startVisitorCount = () => {
+        const label = document.getElementById('visitorCount');
+        if (!label || !window.firestore) return;
+        const ref = window.firestore.collection('visitors').doc('total');
+        ref.onSnapshot((doc) => {
+            const data = doc.data() || {};
+            const value = typeof data.count === 'number' ? data.count : 0;
+            label.textContent = value.toLocaleString();
         });
     };
 
@@ -111,4 +207,8 @@
         }
         openModal();
     });
+
+    startBusiestListener();
+    initBusiestJoin();
+    startVisitorCount();
 })();

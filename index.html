@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en" class="landing-html">
 <head>
     <meta charset="UTF-8">
@@ -39,6 +39,7 @@
       "logo": "https://thisizasif.github.io/TrulyChat/assets/trulychat.png"
     }
     </script>
+
 </head>
 <body class="landing-body theme-dark welcome-simple">
     <div class="welcome-simple-shell">
@@ -50,8 +51,13 @@
             <nav class="welcome-simple-links">
                 <a href="pages/about.html">About</a>
                 <a href="mailto:thisizasif@gmail.com">Contact</a>
+                <!-- <a href="secure/index.html">Secure Join</a> -->
                 <a href="join.html" class="cta">Join</a>
             </nav>
+            <div class="welcome-visits" aria-live="polite">
+                <span class="visit-label">Visitors</span>
+                <span class="visit-count"><span id="visitorCount">--</span></span>
+            </div>
         </header>
 
         <main class="welcome-simple-hero">
@@ -59,19 +65,42 @@
             <h1>Start a room in seconds.</h1>
             <p>Create or Join a room with a channel number, share it, and chat live without signup.</p>
             <div class="hero-actions">
-                <a class="cta" href="join.html">Go to Join Page</a>
-                <a class="ghost" href="#" id="enterCodeBtn">Enter a code</a>
+                <a class="cta" href="join.html">Get Started</a>
+                <a class="ghost" href="#" id="enterCodeBtn">Enter channel number to join</a>
             </div>
         </main>
-
-        
+        <section class="welcome-busiest" aria-live="polite">
+            <div class="busiest-tile">
+                <div class="busiest-header">
+                    <span class="busiest-label">Busiest channel now</span>
+                    <span id="welcomeBusiestCount" class="busiest-count">-- online</span>
+                </div>
+                <div class="busiest-body">
+                    <div class="busiest-channel">
+                        Channel <span id="welcomeBusiestChannel">---</span>
+                    </div>
+                    <button id="welcomeJoinBusiest" type="button" class="busiest-join" disabled>
+                        Join busiest channel
+                    </button>
+                </div>
+            </div>
+        </section>
+        <footer class="welcome-simple-footer">
+            Crafted with love ❤️ by thisizasif · © 2026
+        </footer>
     </div>
 
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
     <script src="scripts/firebase-config.js"></script>
     <script src="scripts/limits.js"></script>
     <script src="scripts/welcome.js"></script>
 </body>
 </html>
+
+
+
+
+
 

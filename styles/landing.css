@@ -1,4 +1,4 @@
-@import url("style.css");
+﻿@import url("style.css");
 
 /* Welcome page simple layout */
 .welcome-simple {
@@ -28,6 +28,7 @@
     padding: 14px clamp(18px, 4vw, 44px);
     background: transparent;
     backdrop-filter: none;
+    flex-wrap: wrap;
 }
 
 .welcome-simple-hero {
@@ -137,6 +138,39 @@
     text-align: center;
 }
 
+.welcome-busiest {
+    display: flex;
+    justify-content: center;
+    margin: 0 auto 24px;
+}
+
+.welcome-busiest .busiest-tile {
+    width: min(720px, 92vw);
+    padding: 16px 18px;
+    border-radius: 18px;
+    background: rgba(15, 23, 42, 0.55);
+    border: 1px solid rgba(148, 163, 184, 0.22);
+}
+
+.welcome-visits {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 12px;
+    border-radius: 999px;
+    border: 1px solid rgba(148, 163, 184, 0.25);
+    background: rgba(15, 23, 42, 0.35);
+    color: #cbd5f0;
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+
+.welcome-visits .visit-count {
+    color: #f8fafc;
+    display: inline-flex;
+    gap: 8px;
+}
+
 .welcome-simple .modal-backdrop {
     position: fixed;
     inset: 0;
@@ -223,9 +257,54 @@
         justify-content: flex-end;
     }
 
-    .welcome-simple-links .cta {
-        display: none;
+.welcome-simple-links .cta {
+    display: none;
+}
+
+    .welcome-simple-nav {
+        gap: 10px;
     }
+
+    .welcome-visits {
+        order: 3;
+        width: auto;
+        justify-content: center;
+        padding: 4px 10px;
+        font-size: 0.8rem;
+        gap: 6px;
+    }
+
+    .welcome-visits .visit-count {
+        gap: 6px;
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+}
+
+.password-field {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.password-field input {
+    width: 100%;
+    padding-right: 40px;
+}
+
+.password-eye {
+    position: absolute;
+    right: 12px;
+    font-size: 1rem;
+    cursor: pointer;
+    color: #94a3b8;
+    user-select: none;
+}
+
+.password-eye:focus-visible {
+    outline: 2px solid #22c55e;
+    outline-offset: 2px;
+    border-radius: 8px;
 }
 
 .busiest-panel {
@@ -299,3 +378,4 @@
         text-align: center;
     }
 }
+

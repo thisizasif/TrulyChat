@@ -18,6 +18,10 @@ try {
 }
 
 const database = firebase.database();
+const firestore = typeof firebase.firestore === 'function' ? firebase.firestore() : null;
+if (firestore) {
+    window.firestore = firestore;
+}
 
 // Function to cleanup stale online users (users who didn't disconnect properly)
 function cleanupStaleUsers() {
