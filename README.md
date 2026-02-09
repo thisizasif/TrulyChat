@@ -1,5 +1,5 @@
-<div align="center">
-  <img src="trulychat.png" alt="TrulyChat" width="120" height="120" />
+﻿<div align="center">
+  <img src="assets/trulychat.png" alt="TrulyChat" width="120" height="120" />
   <h1>TrulyChat</h1>
   <p>Instant private channel chat. No sign-up. Share a number, start talking.</p>
 </div>
@@ -14,13 +14,18 @@
 </div>
 
 <div align="center">
-  <a href="https://thisizasif.github.io/TrulyChat/">Live Demo</a>
-  ·
-  <a href="help.html">Help</a>
-  ·
-  <a href="faq.html">FAQ</a>
-  ·
-  <a href="privacy.html">Privacy</a>
+  <a href="https://thisizasif.github.io/TrulyChat/">
+    <img alt="Live Demo" src="https://img.shields.io/badge/Live%20Demo-Visit-22c55e?style=for-the-badge" />
+  </a>
+  <a href="pages/help.html">
+    <img alt="Help" src="https://img.shields.io/badge/Help-Read-0ea5a4?style=for-the-badge" />
+  </a>
+  <a href="pages/faq.html">
+    <img alt="FAQ" src="https://img.shields.io/badge/FAQ-Answers-3b82f6?style=for-the-badge" />
+  </a>
+  <a href="pages/privacy.html">
+    <img alt="Privacy" src="https://img.shields.io/badge/Privacy-Details-6366f1?style=for-the-badge" />
+  </a>
 </div>
 
 **What is TrulyChat**
@@ -34,21 +39,23 @@ TrulyChat lets anyone create a private chat room using a channel number. Share t
 - SEO-ready landing + help/about/privacy pages
 
 **Pages**
-- `index.html` — landing and join page
+- `index.html` — welcome page
+- `join.html` — join a channel
 - `chat.html` — chat experience
-- `help.html` — quick help guide
-- `faq.html` — FAQs with structured data
-- `about.html` — product overview
-- `privacy.html` — privacy notes
+- `pages/help.html` — help guide
+- `pages/faq.html` — FAQs with structured data
+- `pages/about.html` — product overview
+- `pages/privacy.html` — privacy notes
 
 **Configuration**
-- `config.js` — set the max channel number:
+- `scripts/limits.js` — set the max channel number and max users per channel:
 
 ```js
 window.TRULYCHAT_MAX_CHANNEL_NUMBER = 100;
+window.TRULYCHAT_MAX_USERS_PER_CHANNEL = 50;
 ```
 
-- `firebase-config.js` — your Firebase project config
+- `scripts/firebase-config.js` — your Firebase project config
 
 **Local Development**
 1. Open the folder in VS Code.
@@ -68,5 +75,5 @@ python -m http.server 5500
 This project is designed for GitHub Pages. Push to the `TrulyChat` repo and enable Pages on the `main` branch.
 
 **Notes**
-- Keep `firebase-config.js` credentials in sync with your Firebase project.
-- Update the canonical URLs in `index.html`, `sitemap.xml`, and page heads if your domain changes.
+- Keep `scripts/firebase-config.js` credentials in sync with your Firebase project.
+- Update the canonical URLs in `index.html`, `join.html`, `sitemap.xml`, and page heads if your domain changes.

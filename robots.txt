@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+Disallow: /chat.html
+Sitemap: https://thisizasif.github.io/TrulyChat/sitemap.xml
