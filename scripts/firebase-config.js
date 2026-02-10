@@ -19,6 +19,7 @@ try {
 
 const database = firebase.database();
 const firestore = typeof firebase.firestore === 'function' ? firebase.firestore() : null;
+window.database = database;
 if (firestore) {
     window.firestore = firestore;
 }

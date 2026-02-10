@@ -1,3 +1,53 @@
 @import url("style.css");
 
 /* Chat page specific styles can live here. */
+.chat-body .chat-header {
+    padding: 12px 16px;
+    gap: 12px;
+}
+
+.chat-body .header-line {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: center;
+}
+
+.chat-body .header-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+@media (max-width: 640px) {
+    .chat-body .chat-header {
+        position: sticky;
+        top: 0;
+        z-index: 5;
+    }
+
+    .chat-body .header-line h2 {
+        font-size: 1rem;
+    }
+
+    .chat-body .online-badge,
+    .chat-body .user-badge {
+        font-size: 0.75rem;
+        padding: 4px 8px;
+    }
+
+    .chat-body .leave-btn,
+    .chat-body .next-btn,
+    .chat-body .menu-btn {
+        padding: 6px 10px;
+        font-size: 0.8rem;
+    }
+
+    .chat-body .chat-tools {
+        gap: 8px;
+    }
+
+    .chat-body .search-group {
+        flex: 1 1 auto;
+    }
+}

@@ -15,6 +15,30 @@ function sanitizeJoinName(value) {
         .slice(0, 24);
 }
 
+async function isNameTaken(channel, name) {
+    if (!channel || !name || typeof database === 'undefined') return false;
+    const snapshot = await database.ref(`channels/${channel}/online`).once('value');
+    let taken = false;
+    snapshot.forEach((child) => {
+        const data = child.val();
+        if (!data || !data.name) return;
+        if (sanitizeJoinName(data.name).toLowerCase() === sanitizeJoinName(name).toLowerCase()) {
+            taken = true;
+        }
+    });
+    return taken;
+}
+
+async function findAvailableName(channel) {
+    const base = 'iLOveSky';
+    if (!await isNameTaken(channel, base)) return base;
+    for (let i = 1; i <= 999; i += 1) {
+        const candidate = `${base}${i}`;
+        if (!await isNameTaken(channel, candidate)) return candidate;
+    }
+    return `${base}${Math.floor(Math.random() * 10000)}`;
+}
+
 function showJoinError(message) {
     const error = document.getElementById('joinError');
     if (!error) return;
@@ -86,24 +110,33 @@ function startBusiestListener() {
     });
 }
 
-async function startChat() {
+async function startChat(options = {}) {
     const nameInput = document.getElementById('nameInput');
     const channelInput = document.getElementById('channelInput');
-    const name = sanitizeJoinName(nameInput ? nameInput.value : '');
+    let name = sanitizeJoinName(nameInput ? nameInput.value : '');
     const channel = channelInput ? channelInput.value.trim() : '';
     const maxChannel = getMaxChannelNumber();
-
-    if (!name) {
-        showJoinError('Please enter your name.');
-        if (nameInput) nameInput.focus();
-        return;
-    }
 
     const channelNumber = parseInt(channel, 10);
     if (!channel || Number.isNaN(channelNumber) || channelNumber < 1 || channelNumber > maxChannel) {
         showJoinError(`Please enter a valid channel number (1-${maxChannel}).`);
         if (channelInput) channelInput.focus();
         return;
+    }
+
+    if (!name) {
+        if (options.allowDefaultName) {
+            name = typeof database !== 'undefined'
+                ? await findAvailableName(channelNumber)
+                : 'iLOveSky';
+            if (nameInput) {
+                nameInput.value = name;
+            }
+        } else {
+            showJoinError('Please enter your name.');
+            if (nameInput) nameInput.focus();
+            return;
+        }
     }
 
     if (typeof database !== 'undefined') {
@@ -167,7 +200,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (channelInput) {
                 channelInput.value = '111';
             }
-            startChat();
+            startChat({ allowDefaultName: true });
         });
     }
     if (joinBusiestBtn) {
@@ -175,13 +208,15 @@ document.addEventListener('DOMContentLoaded', () => {
             const target = joinBusiestBtn.dataset.channel;
             if (!target || !channelInput) return;
             channelInput.value = target;
-            startChat();
+            startChat({ allowDefaultName: true });
         });
     }
 
-    const storedName = localStorage.getItem('trulychat_name');
-    if (storedName && nameInput) {
-        nameInput.value = sanitizeJoinName(storedName);
+    if (nameInput) {
+        nameInput.value = '';
+        setTimeout(() => {
+            nameInput.value = '';
+        }, 0);
     }
 
     const themeBtn = document.getElementById('landingThemeToggle');

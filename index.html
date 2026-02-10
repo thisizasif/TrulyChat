@@ -39,7 +39,6 @@
       "logo": "https://thisizasif.github.io/TrulyChat/assets/trulychat.png"
     }
     </script>
-
 </head>
 <body class="landing-body theme-dark welcome-simple">
     <div class="welcome-simple-shell">
@@ -52,6 +51,9 @@
                 <a href="pages/about.html">About</a>
                 <a href="mailto:thisizasif@gmail.com">Contact</a>
                 <!-- <a href="secure/index.html">Secure Join</a> -->
+                <button id="navJoinBusiest" type="button" class="nav-busiest" disabled>
+                    Join busiest channel
+                </button>
                 <a href="join.html" class="cta">Join</a>
             </nav>
             <div class="welcome-visits" aria-live="polite">
@@ -69,22 +71,7 @@
                 <a class="ghost" href="#" id="enterCodeBtn">Enter channel number to join</a>
             </div>
         </main>
-        <section class="welcome-busiest" aria-live="polite">
-            <div class="busiest-tile">
-                <div class="busiest-header">
-                    <span class="busiest-label">Busiest channel now</span>
-                    <span id="welcomeBusiestCount" class="busiest-count">-- online</span>
-                </div>
-                <div class="busiest-body">
-                    <div class="busiest-channel">
-                        Channel <span id="welcomeBusiestChannel">---</span>
-                    </div>
-                    <button id="welcomeJoinBusiest" type="button" class="busiest-join" disabled>
-                        Join busiest channel
-                    </button>
-                </div>
-            </div>
-        </section>
+        <section class="welcome-busiest sr-only" aria-hidden="true"></section>
         <footer class="welcome-simple-footer">
             Crafted with love ❤️ by thisizasif · © 2026
         </footer>
@@ -98,9 +85,6 @@
     <script src="scripts/welcome.js"></script>
 </body>
 </html>
-
-
-
 
 
 

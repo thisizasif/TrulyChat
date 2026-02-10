@@ -14,6 +14,7 @@
         return Number.isFinite(raw) && raw > 0 ? raw : Infinity;
     };
     const isNameTaken = async (channel, name) => {
+        if (typeof database === 'undefined') return false;
         const snap = await database.ref(`channels/${channel}/online`).once('value');
         let taken = false;
         snap.forEach((child) => {
@@ -103,18 +104,31 @@
         const channelEl = document.getElementById('welcomeBusiestChannel');
         const countEl = document.getElementById('welcomeBusiestCount');
         const joinBtn = document.getElementById('welcomeJoinBusiest');
-        if (!channelEl || !countEl || !joinBtn) return;
+        const navJoinBtn = document.getElementById('navJoinBusiest');
+        if (!navJoinBtn && (!channelEl || !countEl || !joinBtn)) return;
         if (!result) {
-            channelEl.textContent = '---';
-            countEl.textContent = 'No active channels';
-            joinBtn.disabled = true;
-            joinBtn.dataset.channel = '';
+            if (channelEl) channelEl.textContent = '---';
+            if (countEl) countEl.textContent = 'No active channels';
+            if (joinBtn) {
+                joinBtn.disabled = true;
+                joinBtn.dataset.channel = '';
+            }
+            if (navJoinBtn) {
+                navJoinBtn.disabled = true;
+                navJoinBtn.dataset.channel = '';
+            }
             return;
         }
-        channelEl.textContent = String(result.channel);
-        countEl.textContent = `${result.count} online`;
-        joinBtn.disabled = false;
-        joinBtn.dataset.channel = String(result.channel);
+        if (channelEl) channelEl.textContent = String(result.channel);
+        if (countEl) countEl.textContent = `${result.count} online`;
+        if (joinBtn) {
+            joinBtn.disabled = false;
+            joinBtn.dataset.channel = String(result.channel);
+        }
+        if (navJoinBtn) {
+            navJoinBtn.disabled = false;
+            navJoinBtn.dataset.channel = String(result.channel);
+        }
     };
 
     const getBusiestFromMeta = (snapshot) => {
@@ -174,9 +188,10 @@
 
     const initBusiestJoin = () => {
         const joinBtn = document.getElementById('welcomeJoinBusiest');
-        if (!joinBtn) return;
-        joinBtn.addEventListener('click', async () => {
-            const target = joinBtn.dataset.channel;
+        const navJoinBtn = document.getElementById('navJoinBusiest');
+        if (!joinBtn && !navJoinBtn) return;
+        const handler = async (button) => {
+            const target = button.dataset.channel;
             if (!target) return;
             const channelNumber = parseInt(target, 10);
             if (!Number.isFinite(channelNumber)) return;
@@ -185,17 +200,41 @@
             params.set('channel', String(channelNumber));
             params.set('name', name);
             window.location.href = `chat.html?${params.toString()}`;
-        });
+        };
+        if (joinBtn) {
+            joinBtn.addEventListener('click', () => handler(joinBtn));
+        }
+        if (navJoinBtn) {
+            navJoinBtn.addEventListener('click', () => handler(navJoinBtn));
+        }
     };
 
     const startVisitorCount = () => {
         const label = document.getElementById('visitorCount');
-        if (!label || !window.firestore) return;
+        if (!label) return;
+
+        const useRealtimeDb = () => {
+            if (typeof database === 'undefined') return;
+            const ref = database.ref('visitors/total');
+            ref.on('value', (snap) => {
+                const value = Number(snap.val() || 0);
+                label.textContent = value.toLocaleString();
+            });
+        };
+
+        if (!window.firestore) {
+            useRealtimeDb();
+            return;
+        }
+
         const ref = window.firestore.collection('visitors').doc('total');
         ref.onSnapshot((doc) => {
             const data = doc.data() || {};
             const value = typeof data.count === 'number' ? data.count : 0;
             label.textContent = value.toLocaleString();
+        }, (error) => {
+            console.warn('Visitor count (Firestore) failed, falling back to RTDB.', error);
+            useRealtimeDb();
         });
     };
 

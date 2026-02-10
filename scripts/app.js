@@ -461,6 +461,13 @@ async function joinChannel(channelFromUrl = null) {
             // Ignore visitor count errors to avoid blocking join.
         }
     }
+    if (typeof database !== 'undefined') {
+        try {
+            database.ref('visitors/total').transaction((value) => (Number(value) || 0) + 1);
+        } catch (error) {
+            // Ignore RTDB visitor count errors.
+        }
+    }
 }
 
 // Setup Firebase database listeners

@@ -11,14 +11,15 @@
 .welcome-simple-shell {
     max-width: 1200px;
     margin: 0 auto;
-    padding: 84px clamp(18px, 4vw, 44px) 64px;
+    padding: 88px clamp(18px, 4vw, 44px) 56px;
+    padding-bottom: 90px;
 }
 
 .welcome-simple-nav {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 16px;
+    gap: 20px;
     margin-bottom: 24px;
     position: fixed;
     top: 0;
@@ -28,17 +29,15 @@
     padding: 14px clamp(18px, 4vw, 44px);
     background: transparent;
     backdrop-filter: none;
-    flex-wrap: wrap;
-}
-
-.welcome-simple-hero {
-    padding-top: 0;
+    flex-wrap: nowrap;
 }
 
 .welcome-simple-links {
     display: flex;
-    gap: 16px;
+    gap: 14px;
     align-items: center;
+    flex: 1;
+    justify-content: flex-end;
 }
 
 .welcome-simple-links a {
@@ -59,40 +58,56 @@
     color: #0b1020;
 }
 
+.welcome-simple-links .nav-busiest {
+    border: 1px solid rgba(148, 163, 184, 0.4);
+    background: rgba(15, 23, 42, 0.35);
+    color: #e2e8f0;
+    padding: 8px 14px;
+    border-radius: 999px;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.welcome-simple-links .nav-busiest:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
 .welcome-simple-hero {
     text-align: center;
-    max-width: 720px;
-    margin: 0 auto 48px;
+    max-width: 640px;
+    margin: 0 auto 28px;
+}
+
+.welcome-simple-hero .hero-kicker {
+    display: inline-flex;
+    padding: 6px 12px;
+    border-radius: 999px;
+    background: rgba(15, 23, 42, 0.6);
+    color: #a7f3d0;
+    font-weight: 600;
+    font-size: 0.9rem;
 }
 
 .welcome-simple-hero h1 {
-    font-size: clamp(2.2rem, 4vw, 3.2rem);
-    margin: 12px 0 16px;
+    font-size: clamp(2.1rem, 4.2vw, 3.1rem);
+    margin: 12px 0 14px;
     color: #f8fafc;
 }
 
 .welcome-simple-hero p {
     color: #cbd5f0;
-    font-size: 1.05rem;
-    line-height: 1.7;
-    max-width: 560px;
+    font-size: 1rem;
+    line-height: 1.65;
+    max-width: 520px;
     margin-left: auto;
     margin-right: auto;
-}
-
-.welcome-simple-hero .hero-tag {
-    display: inline-flex;
-    padding: 6px 14px;
-    border-radius: 999px;
-    background: rgba(15, 23, 42, 0.7);
-    color: #a7f3d0;
-    font-weight: 600;
 }
 
 .welcome-simple-hero .hero-actions {
     display: flex;
     gap: 12px;
-    margin-top: 20px;
+    margin-top: 18px;
     flex-wrap: wrap;
     justify-content: center;
 }
@@ -133,7 +148,12 @@
 }
 
 .welcome-simple-footer {
-    margin-top: 20px;
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    padding: 16px clamp(18px, 4vw, 44px);
+    background: linear-gradient(180deg, rgba(10, 15, 30, 0) 0%, rgba(10, 15, 30, 0.85) 55%, rgba(10, 15, 30, 0.95) 100%);
     color: #94a3b8;
     text-align: center;
 }
@@ -141,12 +161,12 @@
 .welcome-busiest {
     display: flex;
     justify-content: center;
-    margin: 0 auto 24px;
+    margin: 0 auto 20px;
 }
 
 .welcome-busiest .busiest-tile {
     width: min(720px, 92vw);
-    padding: 16px 18px;
+    padding: 14px 16px;
     border-radius: 18px;
     background: rgba(15, 23, 42, 0.55);
     border: 1px solid rgba(148, 163, 184, 0.22);
@@ -163,6 +183,7 @@
     color: #cbd5f0;
     font-weight: 600;
     font-size: 0.9rem;
+    white-space: nowrap;
 }
 
 .welcome-visits .visit-count {
@@ -263,6 +284,7 @@
 
     .welcome-simple-nav {
         gap: 10px;
+        align-items: center;
     }
 
     .welcome-visits {
@@ -278,6 +300,70 @@
         gap: 6px;
         flex-wrap: wrap;
         justify-content: center;
+    }
+}
+
+@media (max-width: 560px) {
+    .welcome-simple-shell {
+        padding: 80px 16px 48px;
+    }
+
+    .welcome-simple-nav {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        grid-template-areas:
+            "brand visits"
+            "links links"
+            "busiest busiest";
+        gap: 8px 10px;
+    }
+
+    .welcome-simple-nav .brand {
+        grid-area: brand;
+        justify-content: flex-start;
+    }
+
+    .welcome-simple-links {
+        grid-area: links;
+        width: 100%;
+        justify-content: flex-start;
+        gap: 10px;
+        flex-wrap: wrap;
+    }
+
+    .welcome-visits {
+        grid-area: visits;
+        width: auto;
+        justify-content: flex-end;
+    }
+
+    .welcome-simple-links .nav-busiest {
+        grid-area: busiest;
+        width: 100%;
+        text-align: center;
+        margin-top: 2px;
+    }
+
+    .welcome-simple-links a {
+        font-size: 0.9rem;
+    }
+
+    .welcome-simple-links a:not(.cta) {
+        display: none;
+    }
+
+    .welcome-simple-hero {
+        text-align: left;
+        margin-bottom: 24px;
+    }
+
+    .welcome-simple-hero p {
+        margin-left: 0;
+        margin-right: 0;
+    }
+
+    .welcome-simple-hero .hero-actions {
+        justify-content: flex-start;
     }
 }
 

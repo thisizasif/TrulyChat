@@ -3728,10 +3728,15 @@ body.theme-dark .join-note {
 @media (max-width: 600px) {
     .landing-nav {
         margin-bottom: 18px;
+        flex-wrap: wrap;
+        gap: 12px;
     }
 
     .landing-links {
-        display: none;
+        display: inline-flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        justify-content: flex-end;
     }
 
     .landing-copy {
@@ -3786,6 +3791,8 @@ body.theme-dark .landing-footer p {
     .landing-nav {
         width: min(520px, 92vw);
         margin: 0 auto 12px;
+        flex-wrap: wrap;
+        gap: 12px;
     }
 
     .landing-shell {
