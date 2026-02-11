@@ -1,0 +1,20 @@
+﻿{
+  "rules": {
+    ".read": "auth != null",
+    ".write": "auth != null",
+    "status": {
+      "$roomId": {
+        "$uid": {
+          ".read": "auth != null",
+          ".write": "auth != null && auth.uid == $uid"
+        }
+      }
+    },
+    "roomStatus": {
+      "$roomId": {
+        ".read": "root.child('rooms').child($roomId).child('members').child(auth.uid).exists()",
+        ".write": "root.child('rooms').child($roomId).child('members').child(auth.uid).exists()"
+      }
+    }
+  }
+}

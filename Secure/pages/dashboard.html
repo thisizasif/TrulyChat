@@ -1,0 +1,138 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dashboard - TrulyChat</title>
+  <link rel="stylesheet" href="../assets/css/pages/dashboard.css" />
+</head>
+<body>
+  <header class="nav">
+    <div class="container nav-inner">
+      <a class="brand" href="../index.html">
+        <span class="brand-mark">TC</span>
+        TrulyChat
+      </a>
+      <nav class="nav-links" data-nav-menu id="site-nav">
+        <div class="nav-mobile-actions">
+          <button class="btn btn-ghost" type="button" data-theme-toggle>Dark mode</button>
+          <a class="btn btn-ghost" href="managerooms.html">Manage rooms</a>
+          <button class="btn btn-ghost" type="button" data-logout>Log out</button>
+        </div>
+      </nav>
+      <button class="nav-toggle" type="button" data-nav-toggle aria-expanded="false" aria-controls="site-nav">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+      <div class="nav-actions">
+        <button class="btn btn-ghost" type="button" data-theme-toggle>Dark mode</button>
+        <a class="btn btn-ghost" href="managerooms.html">Manage rooms</a>
+        <button class="btn btn-ghost" data-logout>Log out</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="container section dashboard-page">
+    <section class="dash-hero">
+      <div>
+        <span class="pill">Team overview</span>
+        <h1>Room Dashboard</h1>
+        <p class="small dash-subtitle" data-user>Loading your workspace...</p>
+      </div>
+      <div class="dash-actions">
+        <a class="btn btn-primary" href="rooms.html#create-room">Create a room</a>
+        <a class="btn btn-secondary" href="rooms.html#join-room">Join by ID</a>
+      </div>
+    </section>
+
+    <section class="dash-stats">
+      <div class="card dash-stat-card">
+        <p class="small">Your Rooms</p>
+        <strong data-stat-my-rooms>0</strong>
+      </div>
+      <div class="card dash-stat-card">
+        <p class="small">Other Rooms</p>
+        <strong data-stat-available>0</strong>
+      </div>
+      <div class="card dash-stat-card">
+        <p class="small">Total Members</p>
+        <strong data-stat-members>0</strong>
+      </div>
+    </section>
+
+    <section class="card dash-controls">
+      <div class="dash-filters" role="tablist" aria-label="My room filters">
+        <button class="dash-filter-btn active" type="button" data-dashboard-filter="all" aria-selected="true">All</button>
+        <button class="dash-filter-btn" type="button" data-dashboard-filter="owner" aria-selected="false">Owner</button>
+        <button class="dash-filter-btn" type="button" data-dashboard-filter="member" aria-selected="false">Member</button>
+      </div>
+      <p class="small" data-dashboard-feedback>Loading room insights...</p>
+    </section>
+
+    <section class="section dash-room-section dash-owned-section">
+      <div class="section-title">
+        <h2>Your rooms</h2>
+        <p>Rooms you own.</p>
+      </div>
+      <div class="grid-3 dash-room-grid" data-rooms-list>
+        <div class="card">
+          <h3>Loading rooms...</h3>
+          <p class="small">Fetching your latest room activity.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="section dash-room-section dash-available-section">
+      <div class="section-title">
+        <h2>Available rooms</h2>
+        <p>Rooms you can join with access details.</p>
+      </div>
+      <div class="grid-3 dash-room-grid" data-available-rooms>
+        <div class="card">
+          <h3>Loading available rooms...</h3>
+          <p class="small">Checking team rooms you can access.</p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <div class="toast-overlay" data-room-join-overlay>
+    <div class="toast-card">
+      <h3>Join room</h3>
+      <p class="small" data-room-join-name>Enter the room password to continue.</p>
+      <div>
+        <label for="roomJoinPassword">Room password</label>
+        <input id="roomJoinPassword" type="password" autocomplete="new-password" placeholder="Enter password" />
+      </div>
+      <div class="toast-actions">
+        <button class="btn btn-ghost" type="button" data-room-join-cancel>Cancel</button>
+        <button class="btn btn-primary" type="button" data-room-join-confirm>Join</button>
+      </div>
+      <p class="small" data-room-join-error></p>
+    </div>
+  </div>
+
+  <footer class="footer">
+    <div class="container footer-grid">
+      <div>
+        <strong>TrulyChat</strong>
+        <p class="small">Private rooms, professional conversations.</p>
+      </div>
+      <div>
+        <a href="terms.html">Terms</a>
+        <a href="privacy.html">Privacy</a>
+      </div>
+      <div>
+        <a href="contact.html">Support</a>
+        <a href="help.html">Help</a>
+      </div>
+      <div class="small">&copy; <span data-year></span> TrulyChat</div>
+    </div>
+  </footer>
+
+  <script type="module" src="../assets/js/pages/dashboard.js"></script>
+</body>
+</html>
+
+

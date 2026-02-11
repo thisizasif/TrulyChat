@@ -1,0 +1,93 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Manage Rooms - TrulyChat</title>
+  <link rel="stylesheet" href="../assets/css/pages/managerooms.css" />
+</head>
+<body>
+  <header class="nav">
+    <div class="container nav-inner">
+      <a class="brand" href="../index.html">
+        <span class="brand-mark">TC</span>
+        TrulyChat
+      </a>
+      <nav class="nav-links" data-nav-menu id="site-nav">
+        <div class="nav-mobile-actions">
+          <button class="btn btn-ghost" type="button" data-theme-toggle>Dark mode</button>
+          <a class="btn btn-ghost" href="dashboard.html">Dashboard</a>
+          <a class="btn btn-ghost" href="rooms.html">Create/Join</a>
+          <button class="btn btn-ghost" type="button" data-logout>Log out</button>
+        </div>
+      </nav>
+      <button class="nav-toggle" type="button" data-nav-toggle aria-expanded="false" aria-controls="site-nav">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+      <div class="nav-actions">
+        <button class="btn btn-ghost" type="button" data-theme-toggle>Dark mode</button>
+        <a class="btn btn-ghost" href="dashboard.html">Dashboard</a>
+        <a class="btn btn-ghost" href="rooms.html">Create/Join</a>
+        <button class="btn btn-ghost" type="button" data-logout>Log out</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="container section manager-page">
+    <section class="card manager-feedback-wrap">
+      <p class="small" data-dashboard-feedback>Loading your rooms...</p>
+    </section>
+
+    <section class="card manager-bulk-tools">
+      <div class="manager-bulk-left">
+        <label class="manager-select-all">
+          <input type="checkbox" data-manage-select-all />
+          <span>Select all rooms</span>
+        </label>
+        <span class="small" data-manage-selected-count>0 selected</span>
+      </div>
+      <div class="manager-bulk-right">
+        <button class="btn btn-secondary" type="button" data-manage-bulk-action="set-password">Set password</button>
+        <button class="btn btn-ghost" type="button" data-manage-bulk-action="remove-password">Remove password</button>
+        <button class="btn btn-primary" type="button" data-manage-bulk-action="delete">Delete selected</button>
+      </div>
+    </section>
+
+    <section class="section manager-room-section">
+      <div class="section-title">
+        <h2>Your rooms</h2>
+        <p>Open and manage rooms created by you.</p>
+      </div>
+      <div class="grid-3 manager-room-grid" data-rooms-list>
+        <div class="card">
+          <h3>Loading rooms...</h3>
+          <p class="small">Fetching your room list.</p>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="footer">
+    <div class="container footer-grid">
+      <div>
+        <strong>TrulyChat</strong>
+        <p class="small">Private rooms, professional conversations.</p>
+      </div>
+      <div>
+        <a href="terms.html">Terms</a>
+        <a href="privacy.html">Privacy</a>
+      </div>
+      <div>
+        <a href="contact.html">Support</a>
+        <a href="help.html">Help</a>
+      </div>
+      <div class="small">&copy; <span data-year></span> TrulyChat</div>
+    </div>
+  </footer>
+
+  <script type="module" src="../assets/js/pages/managerooms.js"></script>
+</body>
+</html>

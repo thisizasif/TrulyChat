@@ -1,0 +1,131 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Auth - TrulyChat</title>
+  <link rel="stylesheet" href="../assets/css/pages/login.css" />
+</head>
+<body>
+  <header class="nav">
+    <div class="container nav-inner">
+      <a class="brand" href="../index.html">TrulyChat</a>
+      <nav class="nav-links" data-nav-menu id="site-nav">
+        <a data-nav href="about.html">About</a>
+        <a data-nav href="contact.html">Contact</a>
+        <div class="nav-mobile-actions">
+          <button class="btn btn-ghost" type="button" data-theme-toggle>Dark mode</button>
+          <a class="btn btn-ghost" href="../index.html">Back to Home</a>
+          <a class="btn btn-primary" href="login.html#signup">Create account</a>
+        </div>
+      </nav>
+      <button class="nav-toggle" type="button" data-nav-toggle aria-expanded="false" aria-controls="site-nav">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+      <div class="nav-actions">
+        <button class="btn btn-ghost" type="button" data-theme-toggle>Dark mode</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="container">
+    <section class="auth-shell">
+      <aside class="auth-showcase card">
+        <span class="pill">Secure workspace access</span>
+        <h1>One account for every room your team runs.</h1>
+        <p class="small">
+          Sign in to continue active rooms or create a new account to launch private channels,
+          member controls, and real-time updates in minutes.
+        </p>
+        <div class="auth-points">
+          <div>
+            <strong>Password-gated rooms</strong>
+            <p class="small">Control entry with room IDs and optional shared passwords.</p>
+          </div>
+          <div>
+            <strong>Realtime activity</strong>
+            <p class="small">Track member presence and message delivery without refreshes.</p>
+          </div>
+          <div>
+            <strong>Cross-device ready</strong>
+            <p class="small">Use the same account on desktop and mobile browsers.</p>
+          </div>
+        </div>
+      </aside>
+
+      <div class="form-wrap auth-form-wrap">
+        <section data-auth-pane="login" class="auth-pane" aria-labelledby="loginTitle">
+          <div class="auth-heading">
+            <h2 id="loginTitle">Welcome back</h2>
+            <p class="small">Continue to your dashboard and active rooms.</p>
+          </div>
+          <form data-login-form>
+            <div class="form-group">
+              <label for="loginEmail">Work email</label>
+              <input id="loginEmail" name="email" type="email" autocomplete="email" placeholder="you@company.com" required />
+            </div>
+            <div class="form-group">
+              <label for="loginPassword">Password</label>
+              <input id="loginPassword" name="password" type="password" autocomplete="current-password" placeholder="Enter your password" required />
+            </div>
+            <button class="btn btn-primary auth-submit" type="submit">Log in</button>
+            <p class="small" data-error></p>
+          </form>
+          <div class="auth-divider"><span>or</span></div>
+          <button class="btn btn-secondary auth-submit google-auth-btn" type="button" data-google-auth>Continue with Google</button>
+          <p class="small" data-google-error></p>
+          <p class="small auth-switch-line">New here? <button class="auth-link-btn" type="button" data-auth-toggle="signup">Create an account</button></p>
+        </section>
+
+        <section data-auth-pane="signup" class="auth-pane" aria-labelledby="signupTitle" hidden>
+          <div class="auth-heading">
+            <h2 id="signupTitle">Create your account</h2>
+            <p class="small">Set up your profile and start building private rooms.</p>
+          </div>
+          <form data-signup-form>
+            <div class="form-group">
+              <label for="signupName">Full name</label>
+              <input id="signupName" name="name" type="text" autocomplete="name" placeholder="Your full name" required />
+            </div>
+            <div class="form-group">
+              <label for="signupEmail">Work email</label>
+              <input id="signupEmail" name="email" type="email" autocomplete="email" placeholder="you@company.com" required />
+            </div>
+            <div class="form-group">
+              <label for="signupPassword">Password</label>
+              <input id="signupPassword" name="password" type="password" autocomplete="new-password" placeholder="Minimum 6 characters" required />
+              <p class="small">Use at least 6 characters for account security.</p>
+            </div>
+            <button class="btn btn-primary auth-submit" type="submit">Create account</button>
+            <p class="small" data-error></p>
+          </form>
+          <div class="auth-divider"><span>or</span></div>
+          <button class="btn btn-secondary auth-submit google-auth-btn" type="button" data-google-auth>Sign up with Google</button>
+          <p class="small" data-google-error></p>
+          <p class="small auth-switch-line">Already have an account? <button class="auth-link-btn" type="button" data-auth-toggle="login">Log in</button></p>
+        </section>
+
+        <div class="small auth-note">
+          By continuing, you agree to the <a href="terms.html">Terms</a> and <a href="privacy.html">Privacy Policy</a>.
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="container footer-grid">
+      <div>
+        <strong>TrulyChat</strong>
+        <p class="small">Private rooms, professional conversations.</p>
+      </div>
+      <div class="small">&copy; <span data-year></span> TrulyChat</div>
+    </div>
+  </footer>
+
+  <script type="module" src="../assets/js/pages/login.js"></script>
+</body>
+</html>
+
+

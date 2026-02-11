@@ -1,0 +1,151 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Chat - TrulyChat</title>
+  <link rel="stylesheet" href="../assets/css/pages/chat.css" />
+</head>
+<body class="chat-page">
+  <header class="nav">
+    <div class="container nav-inner">
+      <a class="brand" href="../index.html">
+        <span class="brand-mark">TC</span>
+        TrulyChat
+      </a>
+      <nav class="nav-links" data-nav-menu id="site-nav">
+        <div class="nav-mobile-actions">
+          <div class="nav-profile">
+            <div class="nav-avatar" data-current-user-avatar>U</div>
+            <div>
+              <div class="nav-name" data-current-user-name>User</div>
+              <div class="nav-sub">Online</div>
+            </div>
+          </div>
+          <button class="btn btn-ghost" type="button" data-theme-toggle>Dark mode</button>
+          <a class="btn btn-ghost" href="dashboard.html">Dashboard</a>
+          <a class="btn btn-ghost" href="rooms.html">Rooms</a>
+          <button class="btn btn-ghost" type="button" data-change-room>Change room</button>
+          <button class="btn btn-ghost" type="button" data-invite-room>Invite</button>
+          <button class="btn btn-ghost" type="button" data-share-room>Share</button>
+          <button class="btn" type="button" data-leave-room>Leave</button>
+          <button class="btn btn-primary" type="button" data-delete-room>Delete</button>
+          <button class="btn btn-ghost" type="button" data-room-password>Room password</button>
+          <button class="btn btn-ghost" type="button" data-logout>Log out</button>
+          <div class="nav-section" data-owner-only>
+            <div class="nav-section-title">Manage users</div>
+            <div class="nav-member-list" data-member-list></div>
+            <div class="nav-section-title nav-section-gap">Banned users</div>
+            <div class="nav-member-list" data-banned-list></div>
+          </div>
+        </div>
+      </nav>
+      <button class="nav-toggle" type="button" data-nav-toggle aria-expanded="false" aria-controls="site-nav">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+      <div class="nav-actions">
+        <button class="btn btn-ghost" type="button" data-theme-toggle>Dark mode</button>
+        <button class="btn btn-ghost" type="button" data-invite-room>Invite</button>
+        <button class="btn btn-ghost" type="button" data-share-room>Share</button>
+        <button class="btn" type="button" data-leave-room>Leave</button>
+        <button class="btn btn-primary" type="button" data-delete-room>Delete</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="container section chat-container">
+    <div class="chat-shell chat-full chat-shell-top">
+      <div class="chat-panel">
+        <div class="chat-header">
+          <div class="chat-header-info">
+            <div class="chat-title" data-room-name>Room</div>
+            <div class="chat-sub">
+              <span data-member-badge>Room ID</span>
+              <span class="dot" aria-hidden="true">&bull;</span>
+              <span data-online-count>0 online</span>
+            </div>
+          </div>
+          <button class="btn btn-ghost" type="button" data-leave-room>Leave</button>
+        </div>
+        <div class="messages" data-messages></div>
+        <p class="small chat-typing" data-typing-indicator aria-live="polite"></p>
+        <div class="chat-compose-context" data-compose-context hidden>
+          <div class="small" data-compose-context-text></div>
+        </div>
+        <form data-message-form class="chat-input">
+          <input name="message" type="text" placeholder="Write a message..." required />
+          <button class="btn btn-primary" type="submit">Send</button>
+        </form>
+      </div>
+    </div>
+  </main>
+
+  <div class="toast-overlay" data-toast-overlay>
+    <div class="toast-card">
+      <h3>Delete this room?</h3>
+      <p class="small">This action permanently removes the room and all messages.</p>
+      <div class="toast-actions">
+        <button class="btn btn-ghost" type="button" data-toast-cancel>Cancel</button>
+        <button class="btn btn-primary" type="button" data-toast-confirm>Delete</button>
+      </div>
+      <p class="small" data-toast-status></p>
+    </div>
+  </div>
+
+  <div class="toast-overlay" data-password-overlay>
+    <div class="toast-card">
+      <h3>Room password</h3>
+      <p class="small">Set, change, or remove the room password.</p>
+      <div>
+        <label for="roomPasswordInput">Password</label>
+        <div class="password-field">
+          <input id="roomPasswordInput" type="password" placeholder="Leave blank to remove password" />
+          <button
+            class="password-toggle"
+            type="button"
+            data-password-toggle
+            data-target="roomPasswordInput"
+            aria-label="Show password"
+            aria-pressed="false">Show</button>
+        </div>
+      </div>
+      <div class="toast-actions">
+        <button class="btn btn-ghost" type="button" data-password-cancel>Cancel</button>
+        <button class="btn btn-primary" type="button" data-password-save>Save</button>
+      </div>
+      <p class="small" data-password-status></p>
+    </div>
+  </div>
+
+  <div class="toast-overlay" data-password-check-overlay>
+    <div class="toast-card">
+      <h3>Password updated</h3>
+      <p class="small">The room owner changed the password. Enter it to continue.</p>
+      <div>
+        <label for="roomPasswordCheck">Password</label>
+        <div class="password-field">
+          <input id="roomPasswordCheck" type="password" placeholder="Enter new password" />
+          <button
+            class="password-toggle"
+            type="button"
+            data-password-toggle
+            data-target="roomPasswordCheck"
+            aria-label="Show password"
+            aria-pressed="false">Show</button>
+        </div>
+      </div>
+      <div class="toast-actions">
+        <button class="btn btn-ghost" type="button" data-password-check-cancel>Back</button>
+        <button class="btn btn-primary" type="button" data-password-check-confirm>Continue</button>
+      </div>
+      <p class="small" data-password-check-status></p>
+    </div>
+  </div>
+
+  <script type="module" src="../assets/js/pages/chat.js"></script>
+</body>
+</html>
+
+

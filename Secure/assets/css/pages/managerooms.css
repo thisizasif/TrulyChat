@@ -1,0 +1,185 @@
+﻿/* Page entry stylesheet: managerooms */
+@import "../styles.css";
+
+.manager-page {
+  display: grid;
+  gap: 14px;
+  padding-top: 10px;
+  padding-bottom: 22px;
+}
+
+
+.manager-feedback-wrap {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: var(--shadow-soft);
+  padding: 10px 12px;
+  background: color-mix(in srgb, var(--card) 92%, var(--accent-2) 8%);
+}
+
+.manager-feedback-wrap p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.manager-bulk-tools {
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  box-shadow: var(--shadow-soft);
+  padding: 14px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  background: var(--card);
+}
+
+.manager-bulk-left {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.manager-select-all {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  padding: 6px 8px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: color-mix(in srgb, var(--card) 90%, var(--accent-2) 10%);
+}
+
+.manager-select-all input {
+  width: 16px;
+  height: 16px;
+}
+
+.manager-bulk-right {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.manager-bulk-right .btn {
+  min-height: 40px;
+  min-width: 118px;
+  justify-content: center;
+  text-align: center;
+}
+
+.manage-room-select {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.86rem;
+  color: var(--muted);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 6px 8px;
+  background: var(--card);
+}
+
+.manager-room-section {
+  padding-top: 6px;
+  border-top: 0;
+}
+
+.manager-room-section .section-title {
+  margin-bottom: 10px;
+}
+
+.manager-room-section .section-title h2 {
+  margin: 0;
+  font-size: clamp(1.2rem, 2vw, 1.55rem);
+}
+
+.manager-room-section .section-title p {
+  margin: 6px 0 0;
+  color: var(--muted);
+}
+
+.manager-room-grid {
+  margin-top: 0;
+  gap: 12px;
+}
+
+.manager-page .card {
+  border-radius: 14px;
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-soft);
+}
+
+.manager-page .dash-room-id-row {
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px dashed var(--border);
+}
+
+.manager-page .dash-room-id {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.manager-page .dash-card-actions {
+  margin-top: 10px;
+  gap: 8px;
+}
+
+.manager-page .dash-card-actions .btn {
+  min-height: 36px;
+}
+
+body[data-theme='dark'] .manager-feedback-wrap,
+body[data-theme='dark'] .manager-select-all {
+  background: #1a2025;
+  border-color: #323a42;
+}
+
+@media (max-width: 900px) {
+  .manager-bulk-tools {
+    grid-template-columns: 1fr;
+    align-items: stretch;
+  }
+
+  .manager-bulk-right {
+    justify-content: flex-start;
+  }
+}
+
+@media (max-width: 640px) {
+  .manager-page {
+    gap: 10px;
+    padding-top: 4px;
+  }
+
+  .manager-bulk-right {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .manager-bulk-right .btn {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .manager-page .dash-room-id-row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+
+  .manager-page .dash-copy-btn {
+    width: 100%;
+  }
+
+  .manager-page .dash-card-actions .btn {
+    width: 100%;
+  }
+}

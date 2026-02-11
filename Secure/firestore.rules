@@ -1,0 +1,75 @@
+﻿rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isMember(roomId) {
+      return exists(/databases/$(database)/documents/rooms/$(roomId)/members/$(request.auth.uid));
+    }
+
+    function isRoomOwner(roomId) {
+      return request.auth != null &&
+        request.auth.uid == get(/databases/$(database)/documents/rooms/$(roomId)).data.ownerUid;
+    }
+
+    match /rooms/{roomId} {
+      // Allow signed-in users to read room metadata for password checks.
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() && request.resource.data.ownerUid == request.auth.uid;
+      allow update: if isSignedIn() && (
+        request.auth.uid == resource.data.ownerUid ||
+        (isMember(roomId) && request.resource.data.diff(resource.data).changedKeys().hasOnly(['emptySince', 'expiresAt']))
+      );
+      allow delete: if isSignedIn() && (
+        request.auth.uid == resource.data.ownerUid ||
+        (
+          resource.data.expiresAt != null &&
+          request.time >= resource.data.expiresAt
+        )
+      );
+
+      match /members/{uid} {
+        allow read: if isSignedIn() && (isMember(roomId) || isRoomOwner(roomId));
+        allow write: if isSignedIn() && (uid == request.auth.uid || isRoomOwner(roomId));
+      }
+
+      match /messages/{messageId} {
+        allow read: if isSignedIn() && (isMember(roomId) || isRoomOwner(roomId));
+        allow create: if isSignedIn() && isMember(roomId);
+        allow update: if isSignedIn() && isMember(roomId) && (
+          (
+            request.auth.uid == resource.data.uid &&
+            request.resource.data.diff(resource.data).changedKeys().hasOnly(['text', 'editedAt'])
+          ) ||
+          request.resource.data.diff(resource.data).changedKeys().hasOnly(['reactions'])
+        );
+        allow delete: if isSignedIn() && (
+          request.auth.uid == resource.data.uid ||
+          isRoomOwner(roomId)
+        );
+      }
+
+      match /bans/{uid} {
+        allow read: if isSignedIn() && (
+          uid == request.auth.uid ||
+          isRoomOwner(roomId)
+        );
+        allow create, update, delete: if isSignedIn() && isRoomOwner(roomId);
+      }
+    }
+
+    match /users/{uid}/rooms/{roomId} {
+      allow read, write: if isSignedIn() && request.auth.uid == uid;
+      allow delete: if isSignedIn() && (
+        request.auth.uid == uid ||
+        isRoomOwner(roomId)
+      );
+    }
+
+    match /users/{uid} {
+      allow read, write: if isSignedIn() && request.auth.uid == uid;
+    }
+  }
+}

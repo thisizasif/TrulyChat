@@ -1,0 +1,125 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Rooms - TrulyChat</title>
+  <link rel="stylesheet" href="../assets/css/pages/rooms.css" />
+</head>
+<body>
+  <header class="nav">
+    <div class="container nav-inner">
+      <a class="brand" href="dashboard.html">
+        <span class="brand-mark">TC</span>
+        TrulyChat
+      </a>
+      <nav class="nav-links" data-nav-menu id="site-nav">
+        <div class="nav-mobile-actions">
+          <button class="btn btn-ghost" type="button" data-theme-toggle>Dark mode</button>
+          <a class="btn btn-ghost" href="dashboard.html">Dashboard</a>
+          <button class="btn btn-ghost" type="button" data-logout>Log out</button>
+        </div>
+      </nav>
+      <button class="nav-toggle" type="button" data-nav-toggle aria-expanded="false" aria-controls="site-nav">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+      <div class="nav-actions">
+        <button class="btn btn-ghost" type="button" data-theme-toggle>Dark mode</button>
+        <a class="btn btn-ghost" href="dashboard.html">Dashboard</a>
+        <button class="btn btn-ghost" type="button" data-logout>Log out</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="container section rooms-page">
+    <p class="small" data-global-error></p>
+
+    <section class="rooms-hero card">
+      <div>
+        <span class="pill">Room Action Center</span>
+        <h1>Create private rooms or jump into active workspaces.</h1>
+        <p class="small">This page is for room access workflows only. Use Dashboard for room monitoring and analytics.</p>
+      </div>
+    </section>
+
+    <section class="room-layout">
+      <div class="room-forms">
+        <article class="form-wrap room-panel" id="create-room">
+          <div class="room-panel-head">
+            <h3>Create a room</h3>
+            <span class="badge">Owner flow</span>
+          </div>
+          <p class="small">Launch a secure room with a clear shareable ID.</p>
+          <form data-create-room autocomplete="off">
+            <div>
+              <label for="name">Room name</label>
+              <input id="name" name="name" type="text" placeholder="e.g. Product Sprint" maxlength="60" autocomplete="off" required />
+            </div>
+            <div>
+              <label for="roomPasswordCreate">Room password (optional)</label>
+              <input id="roomPasswordCreate" name="roomPassword" type="password" autocomplete="new-password" spellcheck="false" autocapitalize="off" placeholder="Leave blank for open room" />
+            </div>
+            <button class="btn btn-primary" type="submit">Create room</button>
+            <p class="small" data-error></p>
+          </form>
+        </article>
+
+        <article class="form-wrap room-panel" id="join-room">
+          <div class="room-panel-head">
+            <h3>Join a room</h3>
+            <span class="badge">Member flow</span>
+          </div>
+          <p class="small">Enter a valid room ID, then add password only if required.</p>
+          <form data-join-room autocomplete="off">
+            <div>
+              <label for="roomId">Room ID</label>
+              <input id="roomId" name="roomId" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Paste full room ID" required />
+            </div>
+            <div>
+              <label for="joinRoomPassword">Room password (if required)</label>
+              <input id="joinRoomPassword" name="roomPassword" type="password" autocomplete="new-password" spellcheck="false" autocapitalize="off" placeholder="Enter the password if needed" />
+            </div>
+            <button class="btn btn-primary" type="submit">Join room</button>
+            <p class="small" data-error></p>
+          </form>
+        </article>
+      </div>
+
+      <aside class="room-aside">
+        <div class="card room-feed">
+          <div class="room-panel-head">
+            <h3>Public room pulse</h3>
+            <span class="badge">Live</span>
+          </div>
+          <p class="small">Quick browse of active rooms by member count.</p>
+          <div class="room-list" data-top-rooms>
+            <p class="small">Loading rooms...</p>
+          </div>
+        </div>
+      </aside>
+    </section>
+  </main>
+
+  <div class="toast-overlay" data-room-join-overlay>
+    <div class="toast-card">
+      <h3>Join room</h3>
+      <p class="small" data-room-join-name>Enter the room password to continue.</p>
+      <div>
+        <label for="roomJoinPassword">Room password</label>
+        <input id="roomJoinPassword" type="password" autocomplete="new-password" spellcheck="false" autocapitalize="off" placeholder="Enter password" />
+      </div>
+      <div class="toast-actions">
+        <button class="btn btn-ghost" type="button" data-room-join-cancel>Cancel</button>
+        <button class="btn btn-primary" type="button" data-room-join-confirm>Join</button>
+      </div>
+      <p class="small" data-room-join-error></p>
+    </div>
+  </div>
+
+  <script type="module" src="../assets/js/pages/rooms.js"></script>
+</body>
+</html>
+
+
