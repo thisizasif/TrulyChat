@@ -32,16 +32,16 @@ async function getOnlineCount(roomId) {
 
 async function clearExpiryWindow(roomRef) {
   await roomRef.update({
-    emptySince: admin.firestore.FieldValue.delete(),
-    expiresAt: admin.firestore.FieldValue.delete()
-  });
+    emptySince: null,
+    expiresAt: null
+  }).catch(() => {});
 }
 
 async function markExpiryWindow(roomRef, nowMs) {
   await roomRef.update({
     emptySince: admin.firestore.FieldValue.serverTimestamp(),
     expiresAt: admin.firestore.Timestamp.fromMillis(nowMs + ROOM_TTL_MINUTES * 60 * 1000)
-  });
+  }).catch(() => {});
 }
 
 async function deleteRoomEverywhere(roomId, roomData) {
@@ -57,11 +57,7 @@ async function deleteRoomEverywhere(roomId, roomData) {
   }
 
   await Promise.all(Array.from(memberUids).map(async (uid) => {
-    try {
-      await db.doc(`users/${uid}/rooms/${roomId}`).delete();
-    } catch (_) {
-      // best effort cleanup
-    }
+    await db.doc(`users/${uid}/rooms/${roomId}`).delete().catch(() => {});
   }));
 
   await deleteCollectionDocs(messagesRef);
@@ -83,17 +79,17 @@ exports.cleanupInactiveRooms = onSchedule(
     const now = admin.firestore.Timestamp.now();
     const nowMs = Date.now();
 
+    let deleted = 0;
+    let reset = 0;
+    let kept = 0;
+    let failed = 0;
+
     const expiredRoomsSnap = await db
       .collection('rooms')
       .where('expiresAt', '<=', now)
       .orderBy('expiresAt', 'asc')
       .limit(MAX_ROOMS_PER_RUN)
       .get();
-
-    let deleted = 0;
-    let reset = 0;
-    let kept = 0;
-    let failed = 0;
 
     for (const roomDoc of expiredRoomsSnap.docs) {
       const roomId = roomDoc.id;
@@ -110,7 +106,7 @@ exports.cleanupInactiveRooms = onSchedule(
         deleted += 1;
       } catch (error) {
         failed += 1;
-        logger.error('cleanupInactiveRooms failed for room', { roomId, error: error?.message || String(error) });
+        logger.error('cleanupInactiveRooms expired-delete failed', { roomId, error: error?.message || String(error) });
       }
     }
 
@@ -135,9 +131,47 @@ exports.cleanupInactiveRooms = onSchedule(
       }
     }
 
+    // Repair older rooms that were created before expiresAt existed or had field removed.
+    const missingExpirySnap = await db
+      .collection('rooms')
+      .orderBy('createdAt', 'asc')
+      .limit(MAX_ROOMS_PER_RUN)
+      .get();
+
+    for (const roomDoc of missingExpirySnap.docs) {
+      const roomData = roomDoc.data() || {};
+      if (Object.prototype.hasOwnProperty.call(roomData, 'expiresAt')) {
+        continue;
+      }
+
+      const roomId = roomDoc.id;
+      try {
+        const onlineCount = await getOnlineCount(roomId);
+        if (onlineCount > 0) {
+          await clearExpiryWindow(roomDoc.ref);
+          kept += 1;
+          continue;
+        }
+
+        const createdAtMs = roomData?.createdAt?.toMillis?.() || 0;
+        const shouldDeleteNow = createdAtMs > 0 && (nowMs - createdAtMs) >= (ROOM_TTL_MINUTES * 60 * 1000);
+        if (shouldDeleteNow) {
+          await deleteRoomEverywhere(roomId, roomData);
+          deleted += 1;
+          continue;
+        }
+
+        await markExpiryWindow(roomDoc.ref, nowMs);
+      } catch (error) {
+        failed += 1;
+        logger.error('cleanupInactiveRooms repair-missing-expiry failed', { roomId, error: error?.message || String(error) });
+      }
+    }
+
     logger.info('cleanupInactiveRooms summary', {
       scannedExpired: expiredRoomsSnap.size,
       scannedNoExpiry: noExpirySnap.size,
+      scannedMissingExpiry: missingExpirySnap.size,
       deleted,
       reset,
       kept,

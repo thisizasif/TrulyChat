@@ -2,6 +2,7 @@ import Auth from './auth.js';
 import ChatService from './chat-service.js?v=20260211w';
 import UI from './ui.js';
 import Store from './store.js';
+import { resolveUserDisplayName } from './name-utils.js';
 import { db } from './firebase.js';
 import {
   collection,
@@ -46,13 +47,28 @@ function setTextAll(elements, value) {
   });
 }
 
+function createAvatarNode(className, label, photoURL) {
+  const avatar = document.createElement('div');
+  avatar.className = className;
+  if (photoURL) {
+    const img = document.createElement('img');
+    img.src = photoURL;
+    img.alt = '';
+    avatar.appendChild(img);
+  } else {
+    avatar.textContent = initialsFromName(label);
+  }
+  return avatar;
+}
+
+
 function renderOnlineUsers(containers, rows) {
   containers.forEach((container) => {
     container.innerHTML = '';
     if (!rows.length) {
       const p = document.createElement('p');
       p.className = 'small';
-      p.textContent = 'No one online right now.';
+      p.textContent = 'No users found.';
       container.appendChild(p);
       return;
     }
@@ -60,9 +76,7 @@ function renderOnlineUsers(containers, rows) {
       const item = document.createElement('div');
       item.className = 'nav-online-item';
 
-      const avatar = document.createElement('div');
-      avatar.className = 'nav-online-avatar';
-      avatar.textContent = row.avatar;
+      const avatar = createAvatarNode('nav-online-avatar', row.label, row.photoURL);
 
       const info = document.createElement('div');
       info.className = 'nav-member-info';
@@ -77,14 +91,23 @@ function renderOnlineUsers(containers, rows) {
         badge.textContent = 'Owner';
         info.appendChild(badge);
       }
-
-      const dot = document.createElement('span');
-      dot.className = 'nav-online-dot';
-      dot.setAttribute('aria-hidden', 'true');
+      if (row.isBanned) {
+        const badge = document.createElement('span');
+        badge.className = 'nav-member-badge';
+        badge.textContent = 'Banned';
+        info.appendChild(badge);
+      }
 
       item.appendChild(avatar);
       item.appendChild(info);
-      item.appendChild(dot);
+
+      if (row.isOnline && !row.isBanned) {
+        const dot = document.createElement('span');
+        dot.className = 'nav-online-dot';
+        dot.setAttribute('aria-hidden', 'true');
+        item.appendChild(dot);
+      }
+
       container.appendChild(item);
     });
   });
@@ -96,7 +119,7 @@ function renderManageUsers(containers, rows, onAction) {
     if (!rows.length) {
       const p = document.createElement('p');
       p.className = 'small';
-      p.textContent = 'No members to manage.';
+      p.textContent = 'No online users to manage.';
       container.appendChild(p);
       return;
     }
@@ -108,9 +131,7 @@ function renderManageUsers(containers, rows, onAction) {
       const info = document.createElement('div');
       info.className = 'nav-member-info';
 
-      const avatar = document.createElement('div');
-      avatar.className = 'nav-online-avatar';
-      avatar.textContent = row.avatar;
+      const avatar = createAvatarNode('nav-online-avatar', row.label, row.photoURL);
 
       const name = document.createElement('span');
       name.textContent = row.label;
@@ -134,13 +155,13 @@ function renderManageUsers(containers, rows, onAction) {
         kickBtn.type = 'button';
         kickBtn.className = 'nav-mini-btn';
         kickBtn.textContent = 'Kick';
-        kickBtn.addEventListener('click', () => onAction('kick', row.uid, row.label, kickBtn));
+        kickBtn.addEventListener('click', () => onAction('kick', row.uid, row.label, row.photoURL || '', kickBtn));
 
         const banBtn = document.createElement('button');
         banBtn.type = 'button';
         banBtn.className = 'nav-mini-btn danger';
         banBtn.textContent = 'Ban';
-        banBtn.addEventListener('click', () => onAction('ban', row.uid, row.label, banBtn));
+        banBtn.addEventListener('click', () => onAction('ban', row.uid, row.label, row.photoURL || '', banBtn));
 
         actions.appendChild(kickBtn);
         actions.appendChild(banBtn);
@@ -170,9 +191,7 @@ function renderBannedUsers(containers, rows, onUnban) {
       const info = document.createElement('div');
       info.className = 'nav-member-info';
 
-      const avatar = document.createElement('div');
-      avatar.className = 'nav-online-avatar';
-      avatar.textContent = row.avatar;
+      const avatar = createAvatarNode('nav-online-avatar', row.label, row.photoURL);
 
       const name = document.createElement('span');
       name.textContent = row.label;
@@ -665,7 +684,8 @@ async function joinOpenRoom(candidate, currentUser) {
 
   await setDoc(doc(db, 'rooms', candidate.id, 'members', currentUser.uid), {
     uid: currentUser.uid,
-    displayName: currentUser.displayName || currentUser.email || 'Member',
+    displayName: resolveUserDisplayName(currentUser),
+    photoURL: currentUser.photoURL || '',
     joinedAt: serverTimestamp()
   }, { merge: true });
 
@@ -966,16 +986,30 @@ function syncChatUI(currentUser) {
   setTextAll(UI.memberBadges, `ID: ${roomId}`);
   setTextAll(UI.onlineBadges, `${onlineUids.length} online`);
 
+  const meMember = members.get(currentUser.uid) || null;
+  const mePresence = presence[currentUser.uid] || null;
+  const meName = meMember?.displayName || mePresence?.displayName || resolveUserDisplayName(currentUser);
+  const mePhoto = meMember?.photoURL || mePresence?.photoURL || currentUser.photoURL || '';
+
   if (UI.currentUserNameEl) {
-    UI.currentUserNameEl.textContent = currentUser.displayName || currentUser.email || 'Member';
+    UI.currentUserNameEl.textContent = meName;
   }
   if (UI.currentUserAvatarEl) {
-    UI.currentUserAvatarEl.textContent = initialsFromName(currentUser.displayName || currentUser.email || 'User');
+    UI.currentUserAvatarEl.innerHTML = '';
+    if (mePhoto) {
+      const img = document.createElement('img');
+      img.src = mePhoto;
+      img.alt = '';
+      UI.currentUserAvatarEl.appendChild(img);
+    } else {
+      UI.currentUserAvatarEl.textContent = initialsFromName(meName || 'User');
+    }
   }
 
   const isOwner = room.ownerUid === currentUser.uid;
   UI.ownerOnlySections.forEach((section) => {
     section.hidden = !isOwner;
+    section.style.display = isOwner ? '' : 'none';
   });
   document.querySelectorAll('[data-delete-room], [data-room-password]').forEach((button) => {
     button.hidden = !isOwner;
@@ -986,28 +1020,56 @@ function syncChatUI(currentUser) {
     const presenceName = presence[uid]?.displayName;
     const label = member?.displayName || presenceName || uid;
     return {
+      uid,
       label,
-      avatar: initialsFromName(label),
-      isOwner: uid === room.ownerUid
+      photoURL: member?.photoURL || presence[uid]?.photoURL || '',
+      isOwner: uid === room.ownerUid,
+      isOnline: true,
+      isBanned: false
     };
   });
-  renderOnlineUsers(UI.onlineListEls, onlineRows);
 
-  const memberRows = Array.from(members.entries()).map(([uid, member]) => ({
-    uid,
-    label: member?.displayName || uid,
-    avatar: initialsFromName(member?.displayName || uid),
-    isOwner: uid === room.ownerUid,
-    isMe: uid === currentUser.uid
-  }));
-  renderManageUsers(UI.memberListEls, memberRows, async (action, uid, label, btn) => {
+  const bannedRowsForOnline = Array.from(banned.entries()).map(([uid, member]) => {
+    const label = member?.displayName || uid;
+    return {
+      uid,
+      label,
+      photoURL: member?.photoURL || '',
+      isOwner: uid === room.ownerUid,
+      isOnline: false,
+      isBanned: true
+    };
+  });
+
+  const combinedOnlineRows = [...onlineRows];
+  bannedRowsForOnline.forEach((row) => {
+    if (!combinedOnlineRows.some((item) => item.uid === row.uid)) {
+      combinedOnlineRows.push(row);
+    }
+  });
+
+  renderOnlineUsers(UI.onlineListEls, combinedOnlineRows);
+
+  const memberRows = onlineUids.map((uid) => {
+    const member = members.get(uid);
+    const presenceName = presence[uid]?.displayName;
+    const label = member?.displayName || presenceName || uid;
+    return {
+      uid,
+      label,
+      photoURL: member?.photoURL || presence[uid]?.photoURL || '',
+      isOwner: uid === room.ownerUid,
+      isMe: uid === currentUser.uid
+    };
+  });
+  renderManageUsers(UI.memberListEls, isOwner ? memberRows : [], async (action, uid, label, photoURL, btn) => {
     btn.disabled = true;
     try {
       if (action === 'kick') {
         await chatServiceRef?.kickUser(uid);
         UI.showToast(`${label} was removed from room.`);
       } else {
-        await chatServiceRef?.banUser(uid, label);
+        await chatServiceRef?.banUser(uid, label, photoURL || '');
         UI.showToast(`${label} was banned.`);
       }
     } catch (err) {
@@ -1017,11 +1079,13 @@ function syncChatUI(currentUser) {
     }
   });
 
-  const bannedRows = Array.from(banned.entries()).map(([uid, member]) => ({
-    uid,
-    label: member?.displayName || uid,
-    avatar: initialsFromName(member?.displayName || uid)
-  }));
+  const bannedRows = isOwner
+    ? Array.from(banned.entries()).map(([uid, member]) => ({
+      uid,
+      label: member?.displayName || uid,
+      photoURL: member?.photoURL || ''
+    }))
+    : [];
   renderBannedUsers(UI.bannedListEls, bannedRows, async (uid, label, btn) => {
     btn.disabled = true;
     try {
@@ -1069,3 +1133,20 @@ Auth.requireAuth().then(async (user) => {
   const redirectTarget = `chat.html${window.location.search || ''}${window.location.hash || ''}`;
   window.location.href = `login.html?redirect=${encodeURIComponent(redirectTarget)}`;
 });
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

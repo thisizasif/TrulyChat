@@ -1,7 +1,7 @@
-import { onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js';
+﻿import { onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js';
 import { auth } from './firebase.js';
 
-const AUTH_ENTRY_PAGES = new Set(['login.html', 'signup.html']);
+const AUTH_ENTRY_PAGES = new Set(['login.html', 'signup.html', 'sorry.html']);
 
 function getPageName(pathname) {
   const page = (pathname.split('/').pop() || 'index.html').toLowerCase();
@@ -14,10 +14,10 @@ function isInPagesDirectory(pathname) {
 
 function buildLoginRedirect(pathname, search, hash) {
   const inPages = isInPagesDirectory(pathname);
-  const loginPath = inPages ? 'login.html' : 'pages/login.html';
+  const sorryPath = inPages ? 'sorry.html' : 'pages/sorry.html';
   const page = getPageName(pathname);
   const target = `${page}${search || ''}${hash || ''}`;
-  return `${loginPath}?redirect=${encodeURIComponent(target)}`;
+  return `${sorryPath}?redirect=${encodeURIComponent(target)}`;
 }
 
 function getSafeRedirectPath(rawTarget) {
@@ -49,3 +49,5 @@ onAuthStateChanged(auth, (user) => {
     window.location.replace(defaultDashboardPath);
   }
 });
+
+

@@ -1,3 +1,80 @@
-﻿/* Page entry stylesheet: profile */
+/* Page entry stylesheet: profile */
 @import "../styles.css";
 
+.profile-page {
+  display: grid;
+  gap: 18px;
+}
+
+.profile-grid {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.profile-card {
+  display: grid;
+  gap: 14px;
+}
+
+.profile-avatar-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.profile-avatar {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+  font-weight: 700;
+  color: #fff;
+  background: linear-gradient(135deg, var(--brand), var(--brand-2));
+  flex: 0 0 72px;
+}
+
+.profile-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.profile-avatar-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.profile-avatar-actions input[type="file"] {
+  display: none;
+}
+
+.profile-form {
+  display: grid;
+  gap: 12px;
+}
+
+.profile-actions {
+  display: flex;
+  justify-content: flex-start;
+}
+
+.danger-card {
+  display: grid;
+  gap: 12px;
+  border-color: rgba(194, 60, 60, 0.35);
+}
+
+.danger-btn {
+  border-color: rgba(194, 60, 60, 0.45);
+  color: #9f2f2f;
+}
+
+@media (max-width: 900px) {
+  .profile-grid {
+    grid-template-columns: 1fr;
+  }
+}

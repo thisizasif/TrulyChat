@@ -336,6 +336,14 @@ html {
   font-weight: 700;
   display: grid;
   place-items: center;
+  overflow: hidden;
+}
+
+.nav-avatar img {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
 }
 
 .nav-name {
@@ -436,6 +444,14 @@ html {
   display: grid;
   place-items: center;
   font-size: 0.8rem;
+  overflow: hidden;
+}
+
+.nav-online-avatar img {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
 }
 
 .nav-online-dot {
@@ -2737,6 +2753,8 @@ body.chat-page .chat-input input {
     min-width: 88px;
   }
 }
+
+
 
 
 

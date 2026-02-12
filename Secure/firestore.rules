@@ -1,4 +1,4 @@
-﻿rules_version = '2';
+rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     function isSignedIn() {
@@ -53,6 +53,7 @@ service cloud.firestore {
 
       match /bans/{uid} {
         allow read: if isSignedIn() && (
+          isMember(roomId) ||
           uid == request.auth.uid ||
           isRoomOwner(roomId)
         );
@@ -73,3 +74,4 @@ service cloud.firestore {
     }
   }
 }
+

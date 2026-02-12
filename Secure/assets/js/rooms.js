@@ -2,7 +2,6 @@ import { db, rtdb } from './firebase.js';
 import {
   collection,
   deleteDoc,
-  deleteField,
   doc,
   getDoc,
   getDocs,
@@ -21,6 +20,7 @@ import {
   remove as rtdbRemove
 } from 'https://www.gstatic.com/firebasejs/10.12.4/firebase-database.js';
 import Auth from './auth.js';
+import { resolveUserDisplayName } from './name-utils.js';
 
 class Rooms {
   constructor() {
@@ -91,9 +91,12 @@ class Rooms {
       password: password || '',
       ownerUid: user.uid,
       createdAt: serverTimestamp(),
+      emptySince: null,
+      expiresAt: null,
       members: {
         [user.uid]: {
-          displayName: user.displayName || user.email,
+          displayName: resolveUserDisplayName(user),
+          photoURL: user.photoURL || '',
           uid: user.uid
         }
       }
@@ -108,7 +111,8 @@ class Rooms {
     });
     await setDoc(doc(db, 'rooms', roomId, 'members', user.uid), {
       uid: user.uid,
-      displayName: user.displayName || user.email,
+      displayName: resolveUserDisplayName(user),
+      photoURL: user.photoURL || '',
       joinedAt: serverTimestamp()
     });
     return roomId;
@@ -276,7 +280,8 @@ class Rooms {
     });
     await setDoc(doc(db, 'rooms', roomId, 'members', user.uid), {
       uid: user.uid,
-      displayName: user.displayName || user.email,
+      displayName: resolveUserDisplayName(user),
+      photoURL: user.photoURL || '',
       joinedAt: serverTimestamp()
     });
     try {
@@ -1102,8 +1107,8 @@ class Rooms {
         if (onlineCount > 0) {
           if (hasExpiryWindow) {
             await updateDoc(roomRef, {
-              emptySince: deleteField(),
-              expiresAt: deleteField()
+              emptySince: null,
+              expiresAt: null
             }).catch(() => {});
           }
           continue;
@@ -1138,9 +1143,8 @@ class Rooms {
       this.roomSweepTimer = null;
       const roomsToSweep = this.pendingRoomsForSweep || [];
       await this.runRoomExpirySweep(roomsToSweep);
-      if (this.pendingRoomsForSweep !== roomsToSweep) {
-        this.scheduleRoomExpirySweep(this.pendingRoomsForSweep || []);
-      }
+      // Keep sweeping on a cadence so rooms expire even without new snapshot changes.
+      this.scheduleRoomExpirySweep(this.pendingRoomsForSweep || []);
     }, waitMs);
   }
 
@@ -1194,7 +1198,7 @@ class Rooms {
 
     const user = await Auth.requireAuth();
     if (userEl) {
-      userEl.textContent = `Signed in as ${user.displayName || user.email || 'Member'}`;
+      userEl.textContent = `Signed in as ${resolveUserDisplayName(user)}`;
     }
 
     this.setupDashboardControls();
@@ -1239,3 +1243,10 @@ rooms.initDashboard().catch(() => {
 });
 
 export default rooms;
+
+
+
+
+
+
+

@@ -28,6 +28,7 @@ import {
 } from 'https://www.gstatic.com/firebasejs/10.12.4/firebase-database.js';
 import Store from './store.js';
 import UI from './ui.js';
+import { resolveUserDisplayName } from './name-utils.js';
 
 class ChatService {
   constructor(roomId, user) {
@@ -59,7 +60,8 @@ class ChatService {
       Store.setState({ room: roomSnap.data() });
       await setDoc(doc(this.membersRef, this.user.uid), {
         uid: this.user.uid,
-        displayName: this.user.displayName || this.user.email || 'Member',
+        displayName: resolveUserDisplayName(this.user),
+        photoURL: this.user.photoURL || '',
         joinedAt: serverTimestamp()
       }, { merge: true });
       const room = roomSnap.data();
@@ -109,26 +111,16 @@ class ChatService {
 
   listenForBans(room) {
     const isOwner = room?.ownerUid === this.user.uid;
-    if (isOwner) {
-      onSnapshot(this.bansRef, (snapshot) => {
-        const banned = new Map();
-        snapshot.forEach((doc) => {
-          banned.set(doc.id, doc.data());
-        });
-        Store.setState({ banned });
-      }, () => {
-        Store.setState({ banned: new Map() });
+    onSnapshot(this.bansRef, (snapshot) => {
+      const banned = new Map();
+      snapshot.forEach((docSnap) => {
+        banned.set(docSnap.id, docSnap.data());
       });
-      return;
-    }
+      Store.setState({ banned });
 
-    const myBanRef = doc(this.bansRef, this.user.uid);
-    onSnapshot(myBanRef, (snap) => {
-      if (snap.exists()) {
+      if (!isOwner && banned.has(this.user.uid)) {
         UI.showToast('You were removed from this room.');
         window.location.href = 'rooms.html';
-      } else {
-        Store.setState({ banned: new Map() });
       }
     }, () => {
       Store.setState({ banned: new Map() });
@@ -172,7 +164,8 @@ class ChatService {
       state: 'online',
       typing: false,
       lastChanged: rtdbServerTimestamp(),
-      displayName: this.user.displayName || this.user.email || 'Member'
+      displayName: resolveUserDisplayName(this.user),
+      photoURL: this.user.photoURL || ''
     });
     onDisconnect(this.presenceRef).remove();
     await this.clearRoomExpiryWindow();
@@ -180,8 +173,8 @@ class ChatService {
 
   async clearRoomExpiryWindow() {
     await updateDoc(this.roomRef, {
-      emptySince: deleteField(),
-      expiresAt: deleteField()
+      emptySince: null,
+      expiresAt: null
     }).catch(() => {});
   }
 
@@ -209,7 +202,8 @@ class ChatService {
       state: 'online',
       typing: !!isTyping,
       lastChanged: rtdbServerTimestamp(),
-      displayName: this.user.displayName || this.user.email || 'Member'
+      displayName: resolveUserDisplayName(this.user),
+      photoURL: this.user.photoURL || ''
     }).catch(() => {});
   }
 
@@ -218,7 +212,8 @@ class ChatService {
       state: 'offline',
       typing: false,
       lastChanged: rtdbServerTimestamp(),
-      displayName: this.user.displayName || this.user.email || 'Member'
+      displayName: resolveUserDisplayName(this.user),
+      photoURL: this.user.photoURL || ''
     }).catch(() => {});
   }
 
@@ -229,7 +224,7 @@ class ChatService {
       await addDoc(this.messagesRef, {
         text,
         uid: this.user.uid,
-        displayName: this.user.displayName || this.user.email,
+        displayName: resolveUserDisplayName(this.user),
         photoURL: this.user.photoURL || '',
         replyTo: replyTo || null,
         reactions: {},
@@ -430,7 +425,7 @@ class ChatService {
     await remove(ref(rtdb, `status/${this.roomId}/${targetUid}`)).catch(() => {});
   }
 
-  async banUser(targetUid, displayName = '') {
+  async banUser(targetUid, displayName = '', photoURL = '') {
     const roomSnap = await getDocFromServer(this.roomRef);
     if (!roomSnap.exists()) throw new Error('Room not found.');
     const room = roomSnap.data();
@@ -444,6 +439,7 @@ class ChatService {
     await setDoc(doc(this.bansRef, targetUid), {
       uid: targetUid,
       displayName: displayName || targetUid,
+      photoURL: photoURL || '',
       bannedBy: this.user.uid,
       bannedAt: serverTimestamp()
     }, { merge: true });
@@ -463,3 +459,9 @@ class ChatService {
 }
 
 export default ChatService;
+
+
+
+
+
+

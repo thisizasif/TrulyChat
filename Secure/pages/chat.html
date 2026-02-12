@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
@@ -32,7 +32,11 @@
           <button class="btn btn-primary" type="button" data-delete-room>Delete</button>
           <button class="btn btn-ghost" type="button" data-room-password>Room password</button>
           <button class="btn btn-ghost" type="button" data-logout>Log out</button>
-          <div class="nav-section" data-owner-only>
+          <div class="nav-section">
+            <div class="nav-section-title">Users online</div>
+            <div class="nav-member-list" data-online-list></div>
+          </div>
+          <div class="nav-section" data-owner-only hidden>
             <div class="nav-section-title">Manage users</div>
             <div class="nav-member-list" data-member-list></div>
             <div class="nav-section-title nav-section-gap">Banned users</div>
@@ -147,5 +151,7 @@
   <script type="module" src="../assets/js/pages/chat.js"></script>
 </body>
 </html>
+
+
 
 

@@ -1,0 +1,47 @@
+﻿/* Page entry stylesheet: sorry */
+@import "../styles.css";
+
+.sorry-page {
+  min-height: calc(100vh - 180px);
+  display: grid;
+  place-items: center;
+}
+
+.sorry-card {
+  width: min(640px, 100%);
+  padding: 26px;
+  text-align: center;
+}
+
+.sorry-card h1 {
+  margin: 10px 0 8px;
+  font-size: clamp(1.5rem, 2.7vw, 2.1rem);
+}
+
+.sorry-actions {
+  margin-top: 18px;
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.sorry-actions .btn {
+  min-height: 42px;
+  justify-content: center;
+}
+
+@media (max-width: 640px) {
+  .sorry-card {
+    padding: 18px;
+  }
+
+  .sorry-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .sorry-actions .btn {
+    width: 100%;
+  }
+}

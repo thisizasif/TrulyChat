@@ -138,6 +138,86 @@ function initActiveNav() {
   });
 }
 
+
+function showToast(message, duration = 2800) {
+  let root = document.querySelector('.toast-stack');
+  if (!root) {
+    root = document.createElement('div');
+    root.className = 'toast-stack';
+    document.body.appendChild(root);
+  }
+
+  const toast = document.createElement('div');
+  toast.className = 'toast';
+  toast.textContent = message;
+  root.appendChild(toast);
+
+  window.setTimeout(() => {
+    toast.remove();
+  }, duration);
+}
+
+function promptForEmail(title, message, initialEmail = '') {
+  return new Promise((resolve) => {
+    const overlay = document.createElement('div');
+    overlay.className = 'toast-overlay show';
+    overlay.innerHTML = `
+      <div class="toast-card">
+        <h3>${title}</h3>
+        <p class="small">${message}</p>
+        <div class="form-group" style="margin:0;">
+          <label for="toastEmailInput">Email</label>
+          <input id="toastEmailInput" type="email" autocomplete="email" placeholder="you@company.com" />
+          <p class="small" data-toast-error></p>
+        </div>
+        <div class="toast-actions">
+          <button class="btn btn-ghost" type="button" data-toast-cancel>Cancel</button>
+          <button class="btn btn-primary" type="button" data-toast-confirm>Continue</button>
+        </div>
+      </div>
+    `;
+
+    document.body.appendChild(overlay);
+
+    const input = overlay.querySelector('#toastEmailInput');
+    const cancelBtn = overlay.querySelector('[data-toast-cancel]');
+    const okBtn = overlay.querySelector('[data-toast-confirm]');
+    const errorEl = overlay.querySelector('[data-toast-error]');
+
+    if (input) {
+      input.value = initialEmail || '';
+      input.focus();
+      input.select();
+    }
+
+    const close = (value) => {
+      overlay.remove();
+      resolve(value);
+    };
+
+    const submit = () => {
+      const email = String(input?.value || '').trim();
+      if (!email) {
+        if (errorEl) errorEl.textContent = 'Please enter your email.';
+        return;
+      }
+      close(email);
+    };
+
+    cancelBtn?.addEventListener('click', () => close(null));
+    okBtn?.addEventListener('click', submit);
+    input?.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter') {
+        event.preventDefault();
+        submit();
+      }
+    });
+    overlay.addEventListener('click', (event) => {
+      if (event.target === overlay) close(null);
+    });
+  });
+}
+
 function initAuthLoadingState() {
   const authForms = [loginForm, signupForm].filter(Boolean);
   authForms.forEach((form) => {
@@ -225,12 +305,22 @@ initNavigation();
 initAuthLoadingState();
 initAuthToggle();
 initGoogleRedirectFlow();
+(function showVerificationNoticeFromQuery() {
+  if (!loginForm) return;
+  const params = new URLSearchParams(window.location.search);
+  if (params.get('verify') !== 'required') return;
+  const errorEl = loginForm.querySelector('[data-error]');
+  if (errorEl) {
+    errorEl.textContent = '';
+    showToast('Please verify your email first. We sent a verification email. Please open your inbox and then log in.');
+  }
+})();
 
 if (loginForm) {
   loginForm.addEventListener('submit', async (e) => {
     e.preventDefault();
     const email = loginForm.email.value.trim();
-    const password = loginForm.password.value.trim();
+    const password = loginForm.password.value;
     const errorEl = loginForm.querySelector('[data-error]');
     errorEl.textContent = '';
 
@@ -238,7 +328,11 @@ if (loginForm) {
       await Auth.signIn(email, password);
       Auth.goToPostAuthDefault();
     } catch (err) {
-      errorEl.textContent = Auth.getAuthErrorMessage(err);
+      const message = Auth.getAuthErrorMessage(err);
+      errorEl.textContent = message;
+      if (err?.code === 'auth/email-not-verified') {
+        showToast(message);
+      }
     }
   });
 }
@@ -248,9 +342,14 @@ if (signupForm) {
     e.preventDefault();
     const name = signupForm.name.value.trim();
     const email = signupForm.email.value.trim();
-    const password = signupForm.password.value.trim();
+    const password = signupForm.password.value;
     const errorEl = signupForm.querySelector('[data-error]');
     errorEl.textContent = '';
+
+    if (!name) {
+      errorEl.textContent = 'Full name is required.';
+      return;
+    }
 
     if (password.length < 6) {
       errorEl.textContent = 'Password must be at least 6 characters long.';
@@ -259,9 +358,16 @@ if (signupForm) {
 
     try {
       await Auth.signUp(name, email, password);
-      Auth.goToPostAuthDefault();
+      errorEl.textContent = '';
+      showToast('Verification email sent. Please open your inbox to verify, then log in.');
+      signupForm.reset();
+      setAuthView('login');
     } catch (err) {
-      errorEl.textContent = Auth.getAuthErrorMessage(err);
+      const message = Auth.getAuthErrorMessage(err);
+      errorEl.textContent = message;
+      if (err?.code === 'auth/email-not-verified') {
+        showToast(message);
+      }
     }
   });
 }
@@ -296,3 +402,38 @@ if (logoutButtons.length) {
     });
   });
 }
+
+
+
+
+
+if (loginForm) {
+  const resetBtn = loginForm.querySelector('[data-reset-password]');
+
+  resetBtn?.addEventListener('click', async () => {
+    const errorEl = loginForm.querySelector('[data-error]');
+    if (errorEl) errorEl.textContent = '';
+
+    const email = await promptForEmail(
+      'Reset password',
+      'Enter your email to receive a password reset link.',
+      loginForm.email.value.trim()
+    );
+    if (!email) return;
+
+    try {
+      await Auth.sendPasswordReset(email);
+      showToast('Password reset link sent. Please check your email inbox.');
+    } catch (err) {
+      const message = Auth.getAuthErrorMessage(err);
+      if (errorEl) {
+        errorEl.textContent = message;
+      }
+      showToast(message);
+    }
+  });
+}
+
+
+
+

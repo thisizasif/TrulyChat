@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
@@ -36,25 +36,92 @@
     </div>
   </header>
 
-  <main class="container section">
+  <main class="container section profile-page">
     <div class="section-title">
       <h2>Profile</h2>
-      <p>Manage your personal details.</p>
+      <p>Update your avatar, display name, and account security.</p>
     </div>
-    <div class="form-wrap" style="margin-top: 24px;">
-      <form>
-        <div>
-          <label for="name">Name</label>
-          <input id="name" type="text" placeholder="Your name" />
+
+    <section class="profile-grid">
+      <article class="card profile-card">
+        <h3>Public profile</h3>
+        <p class="small">This name and avatar are used across rooms and chat messages.</p>
+
+        <div class="profile-avatar-row">
+          <div class="profile-avatar" data-profile-avatar>U</div>
+          <div class="profile-avatar-actions">
+            <label class="btn btn-ghost" for="profileAvatarInput">Upload photo</label>
+            <input id="profileAvatarInput" data-avatar-input type="file" accept="image/*" />
+            <button class="btn btn-ghost" type="button" data-avatar-remove>Remove photo</button>
+          </div>
         </div>
-        <div>
-          <label for="email">Email</label>
-          <input id="email" type="email" placeholder="you@example.com" />
-        </div>
-        <button class="btn btn-primary" type="button">Save changes</button>
-      </form>
-    </div>
+
+        <form data-profile-form class="profile-form">
+          <div>
+            <label for="profileName">Full name</label>
+            <input id="profileName" name="name" type="text" placeholder="Your full name" required />
+          </div>
+          <div>
+            <label for="profileEmail">Email</label>
+            <input id="profileEmail" type="email" readonly />
+            <p class="small" data-verify-status></p>
+          </div>
+          <div class="profile-actions">
+            <button class="btn btn-primary" type="submit">Save profile</button>
+          </div>
+        </form>
+      </article>
+
+      <article class="card profile-card">
+        <h3>Security</h3>
+        <p class="small">Change your password. For email/password accounts, current password is required.</p>
+
+        <form data-password-form class="profile-form">
+          <div>
+            <label for="currentPassword">Current password</label>
+            <input id="currentPassword" name="currentPassword" type="password" autocomplete="current-password" placeholder="Current password" />
+          </div>
+          <div>
+            <label for="newPassword">New password</label>
+            <input id="newPassword" name="newPassword" type="password" autocomplete="new-password" placeholder="New password" />
+          </div>
+          <div>
+            <label for="confirmPassword">Confirm new password</label>
+            <input id="confirmPassword" name="confirmPassword" type="password" autocomplete="new-password" placeholder="Confirm new password" />
+          </div>
+          <div class="profile-actions">
+            <button class="btn btn-primary" type="submit">Update password</button>
+          </div>
+        </form>
+      </article>
+    </section>
+
+    <section class="card danger-card">
+      <h3>Danger zone</h3>
+      <p class="small">Delete your account permanently. This action cannot be undone.</p>
+      <button class="btn btn-ghost danger-btn" type="button" data-delete-account>Delete account</button>
+    </section>
   </main>
+
+  <div class="toast-overlay" data-delete-overlay>
+    <div class="toast-card">
+      <h3>Delete account?</h3>
+      <p class="small">Type <strong>DELETE</strong> to continue. For email/password accounts, also enter your current password.</p>
+      <div class="form-group" style="margin:0;">
+        <label for="confirmDeleteText">Type DELETE</label>
+        <input id="confirmDeleteText" type="text" placeholder="DELETE" />
+      </div>
+      <div class="form-group" style="margin:0;">
+        <label for="confirmDeletePassword">Current password</label>
+        <input id="confirmDeletePassword" type="password" autocomplete="current-password" placeholder="Required for email/password" />
+      </div>
+      <div class="toast-actions">
+        <button class="btn btn-ghost" type="button" data-delete-cancel>Cancel</button>
+        <button class="btn btn-primary" type="button" data-delete-confirm>Delete account</button>
+      </div>
+      <p class="small" data-delete-status></p>
+    </div>
+  </div>
 
   <footer class="footer">
     <div class="container footer-grid">
@@ -77,5 +144,3 @@
   <script type="module" src="../assets/js/pages/profile.js"></script>
 </body>
 </html>
-
-
