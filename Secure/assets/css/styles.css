@@ -1592,6 +1592,33 @@ body[data-theme='dark'] .toast {
   gap: 10px;
   justify-content: flex-end;
 }
+.toast-card-verify {
+  width: min(460px, 92vw);
+  padding: 24px;
+  gap: 14px;
+}
+.toast-card-verify h3 {
+  margin: 0;
+  font-size: 1.2rem;
+}
+.toast-card-verify .small {
+  margin: 0;
+  line-height: 1.6;
+}
+.verify-steps {
+  display: grid;
+  gap: 8px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--card) 88%, var(--brand-1) 12%);
+  font-size: 0.9rem;
+  color: var(--ink-soft);
+}
+.toast-card-verify .toast-actions {
+  justify-content: space-between;
+  flex-wrap: wrap;
+}
 
 .password-field {
   position: relative;

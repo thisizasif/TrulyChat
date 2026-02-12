@@ -25,7 +25,10 @@ class Auth {
   requiresEmailVerification(user) {
     if (!user) return false;
     const providers = Array.isArray(user.providerData) ? user.providerData : [];
-    return providers.some((provider) => provider?.providerId === 'password');
+    const hasPassword = providers.some((provider) => provider?.providerId === 'password');
+    const hasGoogle = providers.some((provider) => provider?.providerId === 'google.com');
+    // Require verification only for password-only accounts.
+    return hasPassword && !hasGoogle;
   }
 
   async signUp(name, email, password) {
@@ -33,11 +36,31 @@ class Auth {
     if (!cleanName) {
       throw { code: 'auth/missing-name' };
     }
-    const cred = await createUserWithEmailAndPassword(this.auth, email, password);
-    await updateProfile(cred.user, { displayName: cleanName });
-    await sendEmailVerification(cred.user);
-    await signOut(this.auth);
-    return { verificationSent: true };
+
+    try {
+      const cred = await createUserWithEmailAndPassword(this.auth, email, password);
+      await updateProfile(cred.user, { displayName: cleanName });
+      await sendEmailVerification(cred.user);
+      await signOut(this.auth);
+      return { verificationSent: true };
+    } catch (err) {
+      if (err?.code === 'auth/email-already-in-use') {
+        try {
+          const existing = await signInWithEmailAndPassword(this.auth, email, password);
+          if (this.requiresEmailVerification(existing.user) && !existing.user.emailVerified) {
+            await sendEmailVerification(existing.user).catch(() => {});
+            await signOut(this.auth).catch(() => {});
+            throw { code: 'auth/email-not-verified' };
+          }
+          await signOut(this.auth).catch(() => {});
+        } catch (checkErr) {
+          if (checkErr?.code === 'auth/email-not-verified') {
+            throw checkErr;
+          }
+        }
+      }
+      throw err;
+    }
   }
 
   async signIn(email, password) {
@@ -93,32 +116,6 @@ class Auth {
     await updateProfile(user, { displayName: nextName });
     return user;
   }
-  async resendVerification(email, password = '') {
-    const cleanEmail = String(email || '').trim();
-    if (!cleanEmail) {
-      throw { code: 'auth/missing-email' };
-    }
-
-    const cleanPassword = String(password || '');
-    if (!cleanPassword) {
-      throw { code: 'auth/missing-password' };
-    }
-
-    const cred = await signInWithEmailAndPassword(this.auth, cleanEmail, cleanPassword);
-    if (!this.requiresEmailVerification(cred.user)) {
-      await signOut(this.auth).catch(() => {});
-      throw { code: 'auth/no-email-verification-needed' };
-    }
-
-    if (cred.user.emailVerified) {
-      await signOut(this.auth).catch(() => {});
-      throw { code: 'auth/already-verified' };
-    }
-
-    await sendEmailVerification(cred.user);
-    await signOut(this.auth).catch(() => {});
-    return true;
-  }
   async sendPasswordReset(email) {
     const cleanEmail = String(email || '').trim();
     if (!cleanEmail) {
@@ -150,18 +147,12 @@ class Auth {
       ? errorOrCode
       : errorOrCode?.code;
     switch (code) {
-      case 'auth/missing-password':
-        return 'Please enter your password.';
-      case 'auth/no-email-verification-needed':
-        return 'This account does not require email verification.';
-      case 'auth/already-verified':
-        return 'Your email is already verified. You can log in now.';
       case 'auth/missing-email':
         return 'Please enter your email first.';
       case 'auth/missing-name':
         return 'Full name is required.';
       case 'auth/email-not-verified':
-        return 'Please verify your email first. We sent a verification email. Please open your inbox and then log in.';
+        return 'Your email is not verified yet. Please verify your email to continue.';
       case 'auth/invalid-email':
         return 'Invalid email address.';
       case 'auth/user-disabled':
@@ -227,6 +218,10 @@ class Auth {
 }
 
 export default new Auth();
+
+
+
+
 
 
 

@@ -14,6 +14,9 @@ const themeButtons = document.querySelectorAll('[data-theme-toggle]');
 const yearEls = document.querySelectorAll('[data-year]');
 const authToggles = document.querySelectorAll('[data-auth-toggle]');
 const authPanes = document.querySelectorAll('[data-auth-pane]');
+const authEntryLinks = document.querySelectorAll(
+  '[data-auth-entry], a[href="pages/login.html"], a[href="login.html"], a[href$="/login.html"], a[href="pages/login.html#signup"], a[href="login.html#signup"], a[href$="/login.html#signup"]'
+);
 
 function normalizePageName(pathname) {
   const page = (pathname.split('/').pop() || 'index.html').toLowerCase();
@@ -157,6 +160,80 @@ function showToast(message, duration = 2800) {
   }, duration);
 }
 
+
+function showNoticeOverlay(title, message, actionText = 'OK') {
+  return new Promise((resolve) => {
+    const overlay = document.createElement('div');
+    overlay.className = 'toast-overlay show';
+    overlay.innerHTML = `
+      <div class="toast-card">
+        <h3>${title}</h3>
+        <p class="small">${message}</p>
+        <div class="toast-actions">
+          <button class="btn btn-primary" type="button" data-notice-ok>${actionText}</button>
+        </div>
+      </div>
+    `;
+
+    document.body.appendChild(overlay);
+    const close = () => {
+      overlay.remove();
+      resolve(true);
+    };
+
+    overlay.querySelector('[data-notice-ok]')?.addEventListener('click', close);
+    overlay.addEventListener('click', (event) => {
+      if (event.target === overlay) close();
+    });
+  });
+}
+function getInboxUrl(email) {
+  const value = String(email || '').trim().toLowerCase();
+  if (!value.includes('@')) return 'https://mail.google.com';
+  const domain = value.split('@')[1] || '';
+  if (domain.includes('gmail.com')) return 'https://mail.google.com';
+  if (domain.includes('outlook.') || domain.includes('hotmail.') || domain.includes('live.')) {
+    return 'https://outlook.live.com/mail';
+  }
+  if (domain.includes('yahoo.')) return 'https://mail.yahoo.com';
+  if (domain.includes('icloud.') || domain.includes('me.com')) return 'https://www.icloud.com/mail';
+  return 'https://mail.google.com';
+}
+function showVerificationOverlay(email = '', mode = 'sent') {
+  return new Promise((resolve) => {
+    const safeEmail = String(email || '').trim() || 'your inbox';
+    const isUnverified = mode === 'unverified';
+    const message = isUnverified
+      ? 'Your email is not verified yet. Please verify your email to continue. We sent a verification link to <strong>' + safeEmail + '</strong>.'
+      : 'We sent a verification link to <strong>' + safeEmail + '</strong>. Open your email, verify your account, then come back and log in.';
+    const overlay = document.createElement('div');
+    overlay.className = 'toast-overlay show';
+    overlay.innerHTML =
+      '<div class="toast-card toast-card-verify">' +
+        '<h3>Verify your email</h3>' +
+        '<p class="small">' + message + '</p>' +
+        '<div class="verify-steps">' +
+          '<div>1. Open inbox</div>' +
+          '<div>2. Click verification link</div>' +
+          '<div>3. Return and log in</div>' +
+        '</div>' +
+        '<div class="toast-actions">' +
+          '<button class="btn btn-secondary" type="button" data-open-inbox>Open inbox</button>' +
+          '<button class="btn btn-primary" type="button" data-notice-ok>I understood</button>' +
+        '</div>' +
+      '</div>';
+    document.body.appendChild(overlay);
+    const close = () => {
+      overlay.remove();
+      resolve(true);
+    };
+    overlay.querySelector('[data-open-inbox]')?.addEventListener('click', () => {
+      window.open(getInboxUrl(email), '_blank', 'noopener,noreferrer');
+    });
+    overlay.querySelector('[data-notice-ok]')?.addEventListener('click', close);
+  });
+}
+
 function promptForEmail(title, message, initialEmail = '') {
   return new Promise((resolve) => {
     const overlay = document.createElement('div');
@@ -296,24 +373,62 @@ function initNavigation() {
   });
 }
 
+function ensureFavicon() {
+  const inPages = window.location.pathname.toLowerCase().includes('/pages/');
+  const href = inPages ? '../assets/favicon.svg' : 'assets/favicon.svg';
+  let favicon = document.querySelector('link[rel="icon"]');
+  if (!favicon) {
+    favicon = document.createElement('link');
+    favicon.setAttribute('rel', 'icon');
+    document.head.appendChild(favicon);
+  }
+  favicon.setAttribute('type', 'image/svg+xml');
+  favicon.setAttribute('href', href);
+}
+
+function setAuthEntryVisibility(isLoggedIn) {
+  if (!authEntryLinks.length) return;
+  authEntryLinks.forEach((link) => {
+    link.hidden = !!isLoggedIn;
+    link.style.display = isLoggedIn ? 'none' : '';
+  });
+}
+
+function initAuthEntryVisibility() {
+  // Hide auth-entry links immediately to avoid showing them during auth restore.
+  setAuthEntryVisibility(true);
+  Auth.onAuthStateChanged(Auth.auth, (user) => {
+    setAuthEntryVisibility(!!user);
+  });
+}
+
 markPageState();
+ensureFavicon();
 ensureBrandMark();
 setCurrentYear();
 initTheme();
 initActiveNav();
 initNavigation();
+initAuthEntryVisibility();
 initAuthLoadingState();
 initAuthToggle();
 initGoogleRedirectFlow();
 (function showVerificationNoticeFromQuery() {
   if (!loginForm) return;
-  const params = new URLSearchParams(window.location.search);
-  if (params.get('verify') !== 'required') return;
+
+  const url = new URL(window.location.href);
+  if (url.searchParams.get('verify') !== 'required') return;
+
   const errorEl = loginForm.querySelector('[data-error]');
   if (errorEl) {
-    errorEl.textContent = '';
-    showToast('Please verify your email first. We sent a verification email. Please open your inbox and then log in.');
+    errorEl.textContent = 'Your email is not verified yet. Please verify your email to continue.';
   }
+
+  // Consume this one-time flag so refresh/open does not show repeatedly.
+  url.searchParams.delete('verify');
+  const nextQuery = url.searchParams.toString();
+  const nextUrl = `${url.pathname}${nextQuery ? `?${nextQuery}` : ''}${url.hash || ''}`;
+  window.history.replaceState({}, '', nextUrl);
 })();
 
 if (loginForm) {
@@ -331,7 +446,7 @@ if (loginForm) {
       const message = Auth.getAuthErrorMessage(err);
       errorEl.textContent = message;
       if (err?.code === 'auth/email-not-verified') {
-        showToast(message);
+        errorEl.textContent = 'Your email is not verified yet. Please verify your email to continue.';
       }
     }
   });
@@ -359,14 +474,14 @@ if (signupForm) {
     try {
       await Auth.signUp(name, email, password);
       errorEl.textContent = '';
-      showToast('Verification email sent. Please open your inbox to verify, then log in.');
+      await showVerificationOverlay(email);
       signupForm.reset();
       setAuthView('login');
     } catch (err) {
       const message = Auth.getAuthErrorMessage(err);
       errorEl.textContent = message;
       if (err?.code === 'auth/email-not-verified') {
-        showToast(message);
+        errorEl.textContent = 'Your email is not verified yet. Please verify your email to continue.';
       }
     }
   });
@@ -433,6 +548,7 @@ if (loginForm) {
     }
   });
 }
+
 
 
 

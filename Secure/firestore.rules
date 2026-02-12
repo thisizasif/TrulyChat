@@ -14,13 +14,18 @@ service cloud.firestore {
         request.auth.uid == get(/databases/$(database)/documents/rooms/$(roomId)).data.ownerUid;
     }
 
+    function isRoomExpired(roomId) {
+      return exists(/databases/$(database)/documents/rooms/$(roomId)) &&
+        get(/databases/$(database)/documents/rooms/$(roomId)).data.expiresAt != null &&
+        request.time >= get(/databases/$(database)/documents/rooms/$(roomId)).data.expiresAt;
+    }
+
     match /rooms/{roomId} {
-      // Allow signed-in users to read room metadata for password checks.
       allow read: if isSignedIn();
       allow create: if isSignedIn() && request.resource.data.ownerUid == request.auth.uid;
       allow update: if isSignedIn() && (
         request.auth.uid == resource.data.ownerUid ||
-        (isMember(roomId) && request.resource.data.diff(resource.data).changedKeys().hasOnly(['emptySince', 'expiresAt']))
+        request.resource.data.diff(resource.data).changedKeys().hasOnly(['emptySince', 'expiresAt'])
       );
       allow delete: if isSignedIn() && (
         request.auth.uid == resource.data.ownerUid ||
@@ -65,7 +70,8 @@ service cloud.firestore {
       allow read, write: if isSignedIn() && request.auth.uid == uid;
       allow delete: if isSignedIn() && (
         request.auth.uid == uid ||
-        isRoomOwner(roomId)
+        isRoomOwner(roomId) ||
+        isRoomExpired(roomId)
       );
     }
 
@@ -74,4 +80,3 @@ service cloud.firestore {
     }
   }
 }
-
